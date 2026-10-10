@@ -1,3 +1,113 @@
+async function runStage4Checks(config) {
+  const app = new URL(config.publicAppUrl);
+
+  const request = (path, options = {}) =>
+    fetch(new URL(path, app), {
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(10000),
+      ...options
+    });
+
+  const results = [];
+
+  async function check(attackId, expected, path, options, valid) {
+    const response = await request(path, options);
+    const passed = await valid(response);
+
+    results.push({
+      attackId,
+      expected,
+      observed: passed
+        ? `차단 확인 (HTTP ${response.status})`
+        : `차단 미확인 (HTTP ${response.status})`
+    });
+
+    if (!passed) {
+      throw new Error(
+        `${attackId} 점검 실패: HTTP ${response.status}`
+      );
+    }
+  }
+
+  const isJson401 = async response => {
+    if (response.status !== 401) return false;
+
+    try {
+      const data = await response.json();
+      return typeof data.error === 'string';
+    } catch {
+      return false;
+    }
+  };
+
+  await check(
+    'unauthenticated_api_read',
+    '비로그인 목록 조회는 401 JSON으로 거부',
+    '/api/notes',
+    {},
+    isJson401
+  );
+
+  await check(
+    'unauthenticated_api_write',
+    '비로그인 메모 추가는 401 JSON으로 거부',
+    '/api/notes',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '4단계 차단 점검',
+        body: '저장되면 안 되는 자료'
+      })
+    },
+    isJson401
+  );
+
+  await check(
+    'invalid_jwt',
+    '유효하지 않은 JWT는 401 JSON으로 거부',
+    '/api/notes',
+    {
+      headers: {
+        Authorization: 'Bearer aaa.bbb.ccc'
+      }
+    },
+    isJson401
+  );
+
+  await check(
+    'static_note_exposure',
+    '공개 data.json은 404여야 함',
+    '/data.json',
+    {},
+    async response => response.status === 404
+  );
+
+  const identityResponse = await request('/aleph.json');
+  const identity = identityResponse.ok
+    ? await identityResponse.json().catch(() => null)
+    : null;
+
+  const identityPassed =
+    identityResponse.status === 200 &&
+    identity?.step === 4;
+
+  results.push({
+    attackId: 'deployment_identity',
+    expected: '4단계 배포 식별 파일 존재',
+    observed: identityPassed
+      ? '배포 식별 파일 확인 (step 4)'
+      : `확인 실패 (HTTP ${identityResponse.status})`
+  });
+
+  if (!identityPassed) {
+    throw new Error('4단계 배포 식별 파일 확인 실패');
+  }
+
+  return results;
+}
+
 async function runStage3Checks(config) {
   const app = new URL(config.publicAppUrl);
 
@@ -127,6 +237,10 @@ async function runStage3Checks(config) {
 
 
 export async function runAttackChecks(config) {
+  if (config.step === 4) {
+    return runStage4Checks(config);
+  }
+
   if (config.step === 3) {
     return runStage3Checks(config);
   }

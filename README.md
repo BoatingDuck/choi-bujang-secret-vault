@@ -127,3 +127,51 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 과거 GitHub 공개 커밋에는 가상 메모가 남아 있을 수 있음
 - 이전 Vercel 배포에서도 기존 자료에 접근할 가능성이 있음
 - 최신 배포의 노출 제거가 과거 노출까지 해결했다는 의미는 아님
+
+
+---
+
+
+## 4단계 — 로그인해도 내 자료만 보이게 합니다
+
+<br>
+
+### 구현 내용
+
+- 기존 가상 메모 4건을 A 계정에 연결하고 B 계정에 시험용 메모 1건 생성
+- JWT 검증으로 확인한 사용자 ID를 기준으로 메모 소유권 검사
+- GET 목록 조회에서 본인 소유 메모만 반환
+- POST에서는 검증된 사용자 ID를 owner_id로 저장
+- 개별 GET·PUT·DELETE에서 메모 UUID와 소유자 ID를 함께 검사
+- 타인 메모 접근은 404 JSON으로 거부
+- Supabase RLS에 SELECT·INSERT·UPDATE·DELETE 소유권 정책 적용
+- anon 직접 접근 권한 제거, authenticated CRUD 권한 부여
+
+<br>
+
+### 실제 검증 결과
+
+- A 계정 로그인: 본인 메모 4건 표시
+- B 계정 로그인: 본인 메모 1건 표시
+- B 계정으로 A 메모 직접 GET: HTTP 404
+- B 계정으로 A 메모 직접 PUT: HTTP 404
+- B 계정으로 A 메모 직접 DELETE: HTTP 404
+- 공격 후 메모 개수: A 4건, B 1건 유지
+
+<br>
+
+### 실행 및 확인 방법
+
+1. npm.cmd run build -- --local 로 로컬 빌드 검사
+2. git push origin main 후 Vercel 배포 상태 확인
+3. A/B 계정으로 각각 로그인하여 본인 메모만 표시되는지 확인
+4. 상대방 메모 UUID로 GET·PUT·DELETE 요청 시 404 확인
+5. npm.cmd run bundle 로 제출 묶음 생성
+
+<br>
+
+### 남은 확인 사항
+
+- A/B 양쪽에서 자기 메모의 추가·수정·삭제 재검증
+- 직접 Data API에 대한 anon 권한과 RLS 적용 결과 점검
+- 공식 심판의 4단계 공격 판정
