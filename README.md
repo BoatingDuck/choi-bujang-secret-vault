@@ -83,9 +83,47 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 
 <br>
 
-### 검증 상태
+### 2단계 검증 결과 (2026-10-10)
 
-- Supabase 가상 메모 4건 저장 확인
-- RLS 활성화 확인
-- anon, authenticated 직접 SELECT 권한 없음 확인
-- 최종 GitHub 커밋 및 Vercel 배포 검증은 진행 예정
+<br>
+
+#### 데이터베이스 검증
+- Supabase PostgreSQL에 가상 메모 4건 저장 확인
+- owner_id UUID 컬럼 존재 확인
+- RLS 활성화: true
+- anon SELECT 권한: false
+- authenticated SELECT 권한: false
+- service_role SELECT 권한: true
+
+<br>
+
+#### GitHub 및 공개 파일 검증
+- 2단계 커밋: 0921bc0
+- 커밋 대상에서 가상 메모 본문 패턴 검색: 결과 없음
+- 공개 data.json 제거 확인
+- 배포된 /data.json 요청: HTTP 404
+- 배포된 /aleph.json: 정상 응답, step 2 확인
+- 배포된 JavaScript 전체 검색: 별도 확인 예정
+
+<br>
+
+#### 화면 및 API 검증
+- 첫 화면에 가상 메모 카드 4건 표시 확인
+- /api/notes 비로그인 요청: 메모 4건 조회 성공
+- API 응답에 Supabase Secret Key 미포함 확인
+- 첫 화면 HTTP 응답: 200 OK
+- X-Content-Type-Options: nosniff 확인
+
+<br>
+
+#### 남아 있는 보안 문제
+- /api/notes에는 아직 사용자 인증이 없음
+- 비로그인 사용자도 API를 통해 가상 메모를 조회할 수 있음
+- 이 취약점은 이후 단계에서 접근 통제를 구현하여 해결할 예정
+
+<br>
+
+#### 과거 공개 이력의 한계
+- 과거 GitHub 공개 커밋에는 가상 메모가 남아 있을 수 있음
+- 이전 Vercel 배포에서도 기존 자료에 접근할 가능성이 있음
+- 최신 배포의 노출 제거가 과거 노출까지 해결했다는 의미는 아님

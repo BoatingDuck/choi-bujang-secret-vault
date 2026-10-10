@@ -19,3 +19,5 @@ FROM anon, authenticated;
 
 REVOKE ALL PRIVILEGES ON SEQUENCE public.notes_id_seq
 FROM anon, authenticated;
+
+GRANT SELECT ON TABLE public.notes TO service_role;
