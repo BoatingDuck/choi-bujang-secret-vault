@@ -70,6 +70,7 @@ export default async function handler(req, res) {
       .from('notes')
       .select('id:note_uuid, title, body:content')
       .eq('note_uuid', id)
+      .eq('owner_id', verifiedUser.userId)
       .maybeSingle();
 
     if (error) {
@@ -100,12 +101,13 @@ export default async function handler(req, res) {
     }
 
     const { error: updateError } = await supabase
-        .from('notes')
-        .update({
+      .from('notes')
+      .update({
         title: body.title,
         content: body.body
-        })
-        .eq('note_uuid', id);
+      })
+      .eq('note_uuid', id)
+      .eq('owner_id', verifiedUser.userId);
 
     if (updateError) {
         throw new Error('Database update failed');
@@ -120,9 +122,10 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
     const { error: deleteError } = await supabase
-        .from('notes')
-        .delete()
-        .eq('note_uuid', id);
+      .from('notes')
+      .delete()
+      .eq('note_uuid', id)
+      .eq('owner_id', verifiedUser.userId);
 
     if (deleteError) {
         throw new Error('Database delete failed');

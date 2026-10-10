@@ -116,6 +116,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('notes')
       .select('id:note_uuid, title, body:content, created_at')
+      .eq('owner_id', verifiedUser.userId)
       .order('note_uuid', { ascending: true });
 
     if (error) {
