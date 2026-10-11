@@ -45,24 +45,24 @@ export default async function handler(req, res) {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+  const supabaseAuthKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 
-  if (!supabaseUrl || !supabaseSecretKey) {
+  if (!supabaseUrl || !supabaseSecretKey || !supabaseAuthKey) {
     return res.status(500).json({
-      error: '서버 설정을 확인할 수 없습니다.'
+        error: '서버 설정을 확인할 수 없습니다.'
     });
-  }
-
+    }
   try {
     const supabase = createClient(
-      supabaseUrl,
-      supabaseSecretKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
+        supabaseUrl,
+        supabaseAuthKey,
+        {
+            auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+            }
         }
-      }
     );
 
     const { data, error } =
