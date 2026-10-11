@@ -1,4 +1,4 @@
-async function runStage4Checks(config) {
+async function runStage4Checks(config, expectedStep = 4) {
   const app = new URL(config.publicAppUrl);
 
   const request = (path, options = {}) =>
@@ -91,13 +91,13 @@ async function runStage4Checks(config) {
 
   const identityPassed =
     identityResponse.status === 200 &&
-    identity?.step === 4;
+    identity?.step === expectedStep;
 
   results.push({
     attackId: 'deployment_identity',
-    expected: '4단계 배포 식별 파일 존재',
+    expected: `${expectedStep}단계 배포 식별 파일 존재`,
     observed: identityPassed
-      ? '배포 식별 파일 확인 (step 4)'
+      ? `배포 식별 파일 확인 (step ${expectedStep})`
       : `확인 실패 (HTTP ${identityResponse.status})`
   });
 
@@ -237,8 +237,8 @@ async function runStage3Checks(config) {
 
 
 export async function runAttackChecks(config) {
-  if (config.step === 4) {
-    return runStage4Checks(config);
+  if (config.step === 4 || config.step === 5) {
+    return runStage4Checks(config, config.step);
   }
 
   if (config.step === 3) {

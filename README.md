@@ -175,3 +175,34 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - A/B 양쪽에서 자기 메모의 추가·수정·삭제 재검증
 - 직접 Data API에 대한 anon 권한과 RLS 적용 결과 점검
 - 공식 심판의 4단계 공격 판정
+
+---
+
+## 5단계 저장점 — 자료 요청을 서버 한곳으로 모읍니다
+
+<br>
+
+### 구현 및 변경 사항
+
+- 브라우저의 메모 조회·추가·수정·삭제는 기존 Vercel 서버 함수(`/api/notes`, `/api/notes/:id`)를 통해 처리한다. 브라우저에서 Supabase Data API를 직접 호출하는 메모 CRUD 코드는 없어 수정하지 않았다.
+- Supabase Auth 로그인·로그아웃 기능은 기존 구현을 유지하였다.
+- `public.notes` 테이블의 `PUBLIC`, `anon`, `authenticated` 직접 접근 권한을 회수하고, 서버 함수에서 사용하는 `service_role`의 CRUD 권한은 유지하였다.
+- 서버 함수의 JWT 인증 및 메모 소유권 검사를 유지하였다.
+- `aleph.config.json`의 단계를 5로 변경하고 원본 Data API 주소를 `originalApiUrl`에 등록하였다.
+
+<br>
+
+### 직접 검증
+
+- 권한 변경 전 A 계정에서 메모 조회·추가·수정·삭제 정상 동작을 확인하였다.
+- 권한 변경 후 A 계정에서 기존 메모 4건이 정상 표시됨을 확인하였다.
+- `anon`, `authenticated` 역할의 SELECT·INSERT·UPDATE·DELETE 권한이 모두 false이며 `service_role`은 모두 true임을 확인하였다.
+- Supabase 원본 Data API에 공개 키로 직접 조회를 요청한 결과 HTTP 401, PostgreSQL 오류 코드 42501(permission denied for table notes)이 반환되어 메모가 노출되지 않았다.
+
+<br>
+
+### 남은 검증
+
+- 인증된 사용자 토큰을 이용한 원본 Data API 직접 조회·수정 차단 확인
+- B 계정의 다른 사용자 메모 접근 차단 및 무로그인 서버 API 접근 거부 재확인
+- 5단계 배포 및 공식 채점 결과 확인
