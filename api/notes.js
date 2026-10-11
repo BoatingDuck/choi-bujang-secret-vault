@@ -1,6 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import {
+  verifyRequestUser,
+  isAllowedWriteOrigin
+} from '../src/auth-session.mjs';
 import { createClient } from '@supabase/supabase-js';
-import { createLoginVerifier } from '../src/verify-login.mjs';
 import { randomUUID } from 'node:crypto';
 
 export default async function handler(req, res) {
@@ -13,10 +15,8 @@ export default async function handler(req, res) {
     });
   }
 
-  // 로그인 토큰이 없는 요청은 즉시 거부
-  const authorization = req.headers.authorization;
-
-  if (!authorization) {
+  // Bearer 토큰 또는 브라우저 로그인 쿠키 확인
+  if (!req.headers.authorization && !req.headers.cookie) {
     return res.status(401).json({
       error: '로그인이 필요합니다.'
     });
@@ -32,24 +32,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const config = JSON.parse(
-      await readFile(
-        new URL('../aleph.config.json', import.meta.url),
-        'utf8'
-      )
-    );
-
-    // 기존 인증 도우미를 변경하지 않고 사용
-    const verifyLogin = createLoginVerifier({
-      config,
-      supabaseSecretKey
-    });
-
-    const verifiedUser = await verifyLogin(authorization);
+    // 기존 JWT 검증과 새로운 쿠키 인증을 공통 처리
+    const verifiedUser = await verifyRequestUser(req);
 
     if (!verifiedUser) {
       return res.status(401).json({
         error: '유효하지 않거나 만료된 로그인 토큰입니다.'
+      });
+    }
+
+    if (req.method === 'POST' && !isAllowedWriteOrigin(req)) {
+      return res.status(403).json({
+        error: '허용되지 않은 요청 출처입니다.'
       });
     }
 
