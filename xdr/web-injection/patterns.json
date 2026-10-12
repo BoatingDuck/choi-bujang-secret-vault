@@ -1,0 +1,27 @@
+[
+  {
+    "name": "repeated_sql_injection",
+    "condition": "같은 주소의 SQL 구문 결합·데이터베이스 조회 주입 시도가 반복되어 count>=8이고 T1190 경보인 경우",
+    "evidence": "MITRE ATT&CK T1190: 공개 웹 애플리케이션의 입력 처리 취약점을 반복 악용하려는 SQL 주입 시도"
+  },
+  {
+    "name": "repeated_script_injection",
+    "condition": "같은 주소의 스크립트 삽입 태그 또는 표식이 반복되어 count>=8이고 T1190 경보인 경우",
+    "evidence": "MITRE ATT&CK T1190: 웹 애플리케이션에 스크립트 삽입을 반복하는 악용 시도"
+  },
+  {
+    "name": "repeated_path_traversal",
+    "condition": "../ 같은 상위 경로 탐색·경로 이탈 표기가 반복되어 count>=8이고 T1190 경보인 경우",
+    "evidence": "MITRE ATT&CK T1190: 웹 파일 경로 처리 취약점을 노린 반복 경로 이탈 시도"
+  },
+  {
+    "name": "repeated_command_separator",
+    "condition": "웹 요청 인자에 명령 구분자 표기가 반복되어 count>=8이고 T1190 경보인 경우",
+    "evidence": "MITRE ATT&CK T1190: 외부 공개 애플리케이션의 입력 취약점을 노린 명령 삽입 시도"
+  },
+  {
+    "name": "isolated_suspicious_marker",
+    "condition": "T1190 태그가 붙은 낮은 수위의 단발성 의심 요청은 차단 대신 검토 알림으로 보냄",
+    "evidence": "MITRE ATT&CK T1190은 의심 유형 분류 근거일 뿐 단발 요청만으로 실제 악용을 확정하지 않음"
+  }
+]
