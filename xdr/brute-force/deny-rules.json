@@ -1,0 +1,75 @@
+{
+  "schema": "aleph.xdr.deny-proposals.v1",
+  "rules": [
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.10",
+      "evidenceAlertId": "bf-01",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.10",
+      "evidenceAlertId": "bf-02",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "password_spraying"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.20",
+      "evidenceAlertId": "bf-03",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.30",
+      "evidenceAlertId": "bf-04",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.21",
+      "evidenceAlertId": "bf-05",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "password_spraying"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.44",
+      "evidenceAlertId": "bf-06",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.15",
+      "evidenceAlertId": "bf-07",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "password_guessing"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.18",
+      "evidenceAlertId": "bf-08",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.8",
+      "evidenceAlertId": "bf-09",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "password_spraying"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.40",
+      "evidenceAlertId": "bf-10",
+      "expiresAt": "2026-10-12T06:39:45.684Z",
+      "reason": "rapid_failure_burst"
+    }
+  ]
+}
