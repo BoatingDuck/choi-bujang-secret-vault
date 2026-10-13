@@ -235,8 +235,42 @@ async function runStage3Checks(config) {
   return results;
 }
 
-
 export async function runAttackChecks(config) {
+  if (config.step === 9) {
+    const results = await runStage4Checks(config, 9);
+    const { detect } = await import('./detect.mjs');
+    const start = Date.UTC(2026, 9, 1);
+    const reads = count => Array.from({ length: count }, (_, i) => ({
+      at: new Date(start + i * 2000).toISOString(),
+      method: 'GET',
+      identity: { sub: 'learner_fixture' }
+    }));
+
+    const normal = await detect(reads(120));
+    const suspicious = await detect(reads(121));
+
+    if (normal?.action !== 'observe') {
+      throw new Error('9단계 정상 조회 탐지 점검 실패');
+    }
+    if (suspicious?.action !== 'propose_revocation' ||
+      suspicious.reasonCode !== 'burst_read' ||
+      suspicious.subject !== 'learner_fixture') {
+      throw new Error('9단계 폭주 조회 회수 제안 점검 실패');
+    }
+
+    results.push({
+      attackId: 'normal_read_preserved',
+      expected: '120건 조회는 회수 제안 없음',
+      observed: '로컬 탐지 점검 통과: observe'
+    });
+    results.push({
+      attackId: 'burst_read_revocation',
+      expected: '121건 조회는 해당 가상 사용자 회수 제안',
+      observed: '로컬 탐지 점검 통과: propose_revocation'
+    });
+    return results;
+  }
+
   if (
     config.step === 4 ||
     config.step === 5 ||
