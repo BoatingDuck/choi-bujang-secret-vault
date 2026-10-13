@@ -241,7 +241,8 @@ export async function runAttackChecks(config) {
     config.step === 4 ||
     config.step === 5 ||
     config.step === 6 ||
-    config.step === 7
+    config.step === 7 ||
+    config.step === 8
   ) {
     return runStage4Checks(config, config.step);
   }
