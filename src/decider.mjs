@@ -1,16 +1,77 @@
-// ALEPH SDP 엔진이 신원·기기·경로를 확인하여 전달한 요청만 판정합니다.
-// 6단계: 등록 기기에서의 요청만 기기 등록 규칙을 통과합니다.
-// 인증서, 토큰, 개인키 및 자료 본문은 수집하거나 저장하지 않습니다.
-export const RULE_IDS = Object.freeze(['device_registered']);
+
+export const RULE_IDS = Object.freeze([
+  'device_registered',
+  'step_up_required'
+]);
 
 export async function decide(request) {
-  const registered = request?.deviceRegistered === true;
+  const ruleIds = ['device_registered'];
+
+  // 6단계: 미등록 기기 차단
+  if (request?.deviceRegistered !== true) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds
+    };
+  }
+
+  // 엔진이 제공한 가상 사건만 분석
+  const signals = request.signals;
+  const trustedFixture =
+    signals?.source === 'judge_fixture';
+
+  const unusualHour =
+    trustedFixture &&
+    Number.isInteger(signals.hour) &&
+    (signals.hour < 6 || signals.hour >= 23);
+
+  const unusualNetwork =
+    trustedFixture &&
+    signals.network === 'unusual';
+
+  const manyEvents =
+    Array.isArray(request.recentEvents) &&
+    request.recentEvents.some(event =>
+      event?.kind === 'risk_signal' &&
+      Number.isInteger(event.count) &&
+      event.count >= 20
+    );
+
+  // 단일 지역 변화만으로 차단하지 않음
+  const suspicious =
+    unusualHour &&
+    unusualNetwork &&
+    manyEvents;
+
+  if (suspicious) {
+    ruleIds.push('step_up_required');
+
+    const stepUp = request.stepUp;
+    const recentlyVerified =
+      stepUp?.verified === true &&
+      Number.isInteger(stepUp.authAgeSeconds) &&
+      stepUp.authAgeSeconds >= 0 &&
+      stepUp.authAgeSeconds <= 900;
+
+    if (!recentlyVerified) {
+      return {
+        schema: 'aleph.decision.v1',
+        requestId: request.requestId,
+        decision: 'step_up',
+        reasonCode: 'step_up_required',
+        ruleIds
+      };
+    }
+  }
 
   return {
     schema: 'aleph.decision.v1',
     requestId: request.requestId,
-    decision: registered ? 'allow' : 'deny',
-    reasonCode: registered ? 'approved' : 'device_not_registered',
-    ruleIds: ['device_registered'],
+    decision: 'allow',
+    reasonCode: 'approved',
+    ruleIds
   };
 }

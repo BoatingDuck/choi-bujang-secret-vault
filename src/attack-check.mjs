@@ -237,7 +237,12 @@ async function runStage3Checks(config) {
 
 
 export async function runAttackChecks(config) {
-  if (config.step === 4 || config.step === 5 || config.step === 6) {
+  if (
+    config.step === 4 ||
+    config.step === 5 ||
+    config.step === 6 ||
+    config.step === 7
+  ) {
     return runStage4Checks(config, config.step);
   }
 
