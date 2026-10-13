@@ -236,8 +236,8 @@ async function runStage3Checks(config) {
 }
 
 export async function runAttackChecks(config) {
-  if (config.step === 9) {
-    const results = await runStage4Checks(config, 9);
+  if (config.step === 9 || config.step === 10) {
+    const results = await runStage4Checks(config, config.step);
     const { detect } = await import('./detect.mjs');
     const start = Date.UTC(2026, 9, 1);
     const reads = count => Array.from({ length: count }, (_, i) => ({
@@ -268,6 +268,24 @@ export async function runAttackChecks(config) {
       expected: '121건 조회는 해당 가상 사용자 회수 제안',
       observed: '로컬 탐지 점검 통과: propose_revocation'
     });
+    if (config.step === 10) {
+      const { SAFE_POLICY, policyDigest, comparePolicy, restoreTestPolicy } = await import('./policy-recovery.mjs');
+      const backup = { ...SAFE_POLICY };
+      const current = { ...backup, select: 'true', anotherService: 'unchanged' };
+      const digest = policyDigest(backup);
+      const comparison = comparePolicy(backup, current, digest);
+      const preview = restoreTestPolicy(backup, current, digest, false);
+      const restored = restoreTestPolicy(backup, current, digest, true);
+      if (!comparison.changes.includes('select') || preview.applied ||
+          restored.policy.select !== backup.select || restored.policy.anotherService !== 'unchanged') {
+        throw new Error('10단계 시험 정책 복원 로컬 점검 실패');
+      }
+      results.push({
+        attackId: 'test_policy_recovery',
+        expected: '가상 정책 사본 검증 후 다른 서비스 설정 보존',
+        observed: '로컬 시험 통과 (운영 정책 미변경)'
+      });
+    }
     return results;
   }
 

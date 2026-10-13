@@ -304,3 +304,11 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 2. `npm.cmd run fixture:7`을 실행한다.
 3. 정상 사건은 허용되고 복합 이상 접속은 추가 인증으로 판정되는지 확인한다.
 4. 허용되지 않은 자원 경로가 거부되는지 확인한다.
+
+## 9단계 저장점
+- `src/detect.mjs`에서 사용자별 10분 내 GET 120건 초과를 탐지해 `propose_revocation`을 제안한다. 로컬 `npm.cmd run detect:test` 6/6 통과를 확인하였으며 실제 회수는 별도 심판 판정이다.
+
+## 10단계 — 백업에서 자료실을 되살립니다
+- 시험 정책 및 단일 메모 복구 구현과 미실행 항목은 `docs/STAGE10.md` 참조.
+- 로컬 재검사: `npm.cmd run recovery:test`, `npm.cmd run decider:test`, `npm.cmd run detect:test`.
+- 실제 복원 전 비공개 B 메모 백업 확보 및 검증이 필수다.
