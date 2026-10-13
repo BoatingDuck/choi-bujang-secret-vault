@@ -269,6 +269,17 @@ export async function runAttackChecks(config) {
       observed: '로컬 탐지 점검 통과: propose_revocation'
     });
     if (config.step === 10) {
+      const restoreUnauthenticated = await fetch(new URL(config.restoreRoute, config.publicAppUrl), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: '11111111-1111-4111-8111-111111111111', confirm: true }),
+        cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(10000)
+      });
+      if (restoreUnauthenticated.status !== 401) {
+        throw new Error(`鍮꾨줈洹몄씤 蹂듭썝 嫄곕? 誘명솗?? HTTP ${restoreUnauthenticated.status}`);
+      }
+      results.push({ attackId: 'restore_unauthenticated_denied',
+        expected: '鍮꾨줈洹몄씤 蹂듭썝 POST??401',
+        observed: `?ㅼ젣 諛고룷 ?붿껌 寃곌낵 HTTP ${restoreUnauthenticated.status}` });
       const { SAFE_POLICY, policyDigest, comparePolicy, restoreTestPolicy } = await import('./policy-recovery.mjs');
       const backup = { ...SAFE_POLICY };
       const current = { ...backup, select: 'true', anotherService: 'unchanged' };
