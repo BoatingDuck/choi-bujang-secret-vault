@@ -206,3 +206,39 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 인증된 사용자 토큰을 이용한 원본 Data API 직접 조회·수정 차단 확인
 - B 계정의 다른 사용자 메모 접근 차단 및 무로그인 서버 API 접근 거부 재확인
 - 5단계 배포 및 공식 채점 결과 확인
+
+---
+
+## 6단계 저장점 — 등록한 기기만 자료실에 들어옵니다
+
+<br>
+
+### 구현 내용
+
+- `docs/DECIDER_REQUEST.md`의 계약에 따른 최상위 `request.deviceRegistered`를 검사한다.
+- `RULE_IDS`에 실제 구현 규칙 `device_registered`를 등록한다.
+- `deviceRegistered === true`이면 `allow` / `approved`를 반환한다.
+- `false`, 값 누락 및 그 밖의 모든 값은 `deny` / `device_not_registered`를 반환한다.
+- 응답은 계약의 다섯 항목 `schema`, `requestId`, `decision`, `reasonCode`, `ruleIds`로만 구성한다.
+- 기존 브라우저 화면, 로그인 및 자료실 API 코드는 변경하지 않는다.
+- 인증서, CA, 개인키, 서버 키는 생성하거나 저장소에 추가하지 않는다.
+
+<br>
+
+### 로컬 확인 방법
+
+1. `npm run decider:test`를 실행한다. (Windows PowerShell에서 npm 실행이 제한되면 `npm.cmd run decider:test`)
+2. `통과 · 등록 기기의 정상 요청`을 확인한다.
+3. `통과 · 미등록 기기의 가상 요청`을 확인한다.
+4. 두 번째 요청의 응답은 `deny`, `device_not_registered`이다.
+5. 로컬 가상 시험은 운영 심판의 판정을 의미하지 않는다.
+
+<br>
+
+### 제출 전 확인
+
+1. `aleph.config.json`의 `step` 값이 6이고 기존 발급자·경로·API 주소가 유지되는지 확인한다.
+2. `git status`, `git diff`로 6단계 수정 사항과 다른 작업을 구분한다.
+3. 비밀값이 없는지 확인한 뒤 6단계 저장점으로 커밋한다.
+4. `npm run bundle`을 실행하여 제출 JSON의 `step: 6`, `policyRules: ["device_registered"]` 및 마지막 커밋 정보를 확인한다.
+5. `bundle-notes.json`, `artifacts/submission.json`은 커밋하지 않는다.
