@@ -235,8 +235,84 @@ async function runStage3Checks(config) {
   return results;
 }
 
+// Stage 12 judge sandbox: read-only HTTPS checks only. No POST, secret, or
+// policy-recovery import (its timingSafeEqual is outside the sandbox API).
+async function runStage12ReadOnlyChecks(config) {
+  const app = new URL(config.publicAppUrl);
+  if (app.protocol !== 'https:' || app.pathname !== '/' || app.username ||
+      app.password || app.search || app.hash || !app.hostname ||
+      /(?:^localhost$|\.localhost$|\.local$|\.internal$|\.example$)/i.test(app.hostname)) {
+    throw new Error('12단계 공개 HTTPS 배포 주소를 확인해 주세요.');
+  }
+
+  const results = [];
+  const request = path => fetch(new URL(path, app), {
+    method: 'GET', cache: 'no-store', redirect: 'error'
+  });
+  const check = async (attackId, expected, path, valid) => {
+    const response = await request(path);
+    const passed = await valid(response);
+    if (!passed) throw new Error(attackId + ' 확인 실패: HTTP ' + response.status);
+    results.push({ attackId, expected, observed: '실제 GET HTTP ' + response.status });
+  };
+  const json401 = async response => {
+    if (response.status !== 401) return false;
+    const data = await response.json().catch(() => null);
+    return typeof data?.error === 'string';
+  };
+
+  await check('unauthenticated_api_read', '비로그인 목록 GET 401', '/api/notes', json401);
+  results.push({ attackId: 'unauthenticated_api_write',
+    expected: '비로그인 메모 POST 401', observed: 'not_run' });
+
+  // GET with an invalid static token. This is a dummy, never a real credential.
+  const invalid = await fetch(new URL('/api/notes', app), {
+    method: 'GET', cache: 'no-store', redirect: 'error',
+    headers: { Authorization: 'Bearer aaa.bbb.ccc' }
+  });
+  if (!await json401(invalid)) throw new Error('invalid_jwt 확인 실패: HTTP ' + invalid.status);
+  results.push({ attackId: 'invalid_jwt', expected: '잘못된 JWT GET 401',
+    observed: '실제 GET HTTP ' + invalid.status });
+
+  await check('static_note_exposure', '공개 data.json GET 404', '/data.json',
+    response => response.status === 404);
+
+  const deployed = await request('/aleph.json');
+  const deployedId = deployed.status === 200 ? await deployed.json().catch(() => null) : null;
+  if (deployedId?.step !== 12) throw new Error('12단계 배포 식별 파일 검증 실패');
+  results.push({ attackId: 'deployment_identity',
+    expected: '배포 식별 파일 12단계', observed: '실제 GET HTTP 200, step 12' });
+
+  // This is an explicitly labelled local virtual fixture, NOT engine revocation.
+  const { detect } = await import('./detect.mjs');
+  const start = Date.UTC(2026, 9, 1);
+  const events = n => Array.from({ length: n }, (_, i) => ({
+    method: 'GET', at: new Date(start + i * 2000).toISOString(),
+    identity: { sub: 'learner_fixture' }
+  }));
+  const normal = detect(events(120));
+  const burst = detect(events(121));
+  if (normal?.action !== 'observe' || burst?.action !== 'propose_revocation' ||
+      burst?.reasonCode !== 'burst_read' || burst?.subject !== 'learner_fixture') {
+    throw new Error('12단계 가상 탐지 검사 실패');
+  }
+  results.push({ attackId: 'normal_read_preserved',
+    expected: '가상 조회 120건 observe', observed: '로컬 가상 검사: observe' });
+  results.push({ attackId: 'burst_read_revocation',
+    expected: '가상 조회 121건 회수 제안', observed: '로컬 가상 검사: propose_revocation (실제 회수 아님)' });
+
+  // Judge sandbox permits public GET/HEAD only; NEVER send write requests.
+  results.push({ attackId: 'restore_unauthenticated_denied',
+    expected: '비로그인 복원 POST 401', observed: 'not_run' });
+  // The local policy recovery module requires timingSafeEqual, unsupported here.
+  results.push({ attackId: 'test_policy_recovery',
+    expected: '시험 정책 사본 검증과 복원', observed: 'not_run' });
+  return results;
+}
+
 export async function runAttackChecks(config) {
-  if (config.step === 9 || config.step === 10 || config.step === 11 || config.step === 12) {
+  if (config.step === 12) return runStage12ReadOnlyChecks(config);
+  if (config.step === 9 || config.step === 10 || config.step === 11) {
     const results = await runStage4Checks(config, config.step);
     const { detect } = await import('./detect.mjs');
     const start = Date.UTC(2026, 9, 1);
