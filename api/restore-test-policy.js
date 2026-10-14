@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { requireApprovedDevice } from '../src/device-signature.mjs';
 import { verifyRequestUser, isAllowedWriteOrigin } from '../src/auth-session.mjs';
 import {
   PINNED_SAFE_POLICY_SHA256, policyDigest,
@@ -32,6 +33,10 @@ export default async function handler(req, res) {
       typeof process.env.STAGE10_TEST_B_USER_ID === 'string' &&
       user.userId === process.env.STAGE10_TEST_B_USER_ID);
   if (!permitted) return res.status(403).json({ error: 'B 시험 계정 전용' });
+
+  if (!await requireApprovedDevice(req, user).catch(() => false)) {
+    return res.status(403).json({ error: '승인된 기기 서명이 필요합니다.' });
+  }
 
   const body = req.body;
   if (!body || typeof body !== 'object' || Array.isArray(body) ||

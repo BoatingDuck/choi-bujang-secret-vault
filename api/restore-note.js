@@ -1,4 +1,5 @@
 ﻿import { createClient } from '@supabase/supabase-js';
+import { requireApprovedDevice } from '../src/device-signature.mjs';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { verifyRequestUser, isAllowedWriteOrigin } from '../src/auth-session.mjs';
 import { verifyPrivateNoteSnapshot, noteDigest } from '../src/note-recovery.mjs';
@@ -170,6 +171,7 @@ async function runRecoveryRetests(req, supabase, user, id, expected) {
   await check('owner_read', async () => {
     const r = await invoke(noteHandler, 'GET', credentials, { id });
 
+    if (r.http === 403) return { status: 'NOT_RUN', reason: 'SIGNED_DEVICE_REQUEST_REQUIRED' };
     const passed =
       r.http === 200 &&
       r.data?.id === id &&
@@ -232,6 +234,7 @@ async function runRecoveryRetests(req, supabase, user, id, expected) {
       { id: data[0].note_uuid }
     );
 
+    if (r.http === 403) return { status: 'NOT_RUN', reason: 'SIGNED_DEVICE_REQUEST_REQUIRED' };
     return {
       status: r.http === 404 ? 'PASS' : 'FAIL',
       http: r.http
@@ -320,6 +323,10 @@ export default async function handler(req, res) {
     return res.status(403).json({
       error: '허용되지 않은 신원입니다.'
     });
+  }
+
+  if (!await requireApprovedDevice(req, user).catch(() => false)) {
+    return res.status(403).json({ error: '승인된 기기 서명이 필요합니다.' });
   }
 
   const input = req.body;

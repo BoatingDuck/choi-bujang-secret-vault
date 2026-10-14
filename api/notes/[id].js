@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { requireApprovedDevice } from '../../src/device-signature.mjs';
 import {
   verifyRequestUser,
   isAllowedWriteOrigin
@@ -48,6 +49,10 @@ export default async function handler(req, res) {
       return res.status(403).json({
         error: '허용되지 않은 요청 출처입니다.'
       });
+    }
+
+    if (!await requireApprovedDevice(req, verifiedUser).catch(() => false)) {
+      return res.status(403).json({ error: '기기 승인이 확인되지 않았거나 요청 서명이 틀립니다.' });
     }
 
     const id = req.query.id;

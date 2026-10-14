@@ -4,6 +4,7 @@ import {
 } from '../src/auth-session.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { requireApprovedDevice } from '../src/device-signature.mjs';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -45,6 +46,10 @@ export default async function handler(req, res) {
       return res.status(403).json({
         error: '허용되지 않은 요청 출처입니다.'
       });
+    }
+
+    if (!await requireApprovedDevice(req, verifiedUser).catch(() => false)) {
+      return res.status(403).json({ error: '기기 승인이 확인되지 않았거나 요청 서명이 틀립니다.' });
     }
 
     const supabase = createClient(

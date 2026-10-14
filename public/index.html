@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a28">
+  <meta name="application-name" content="BYTE BACK">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/byteback-192.png">
+  <link rel="apple-touch-icon" href="/icons/byteback-192.png">
   <title>BYTE BACK | 내 자료실</title>
   <style>
     :root { color-scheme: dark; font-family: system-ui, sans-serif; }
@@ -27,13 +32,32 @@
     [hidden] { display: none !important; }
     .note-actions { display: flex; gap: 10px; margin-top: 15px; }
     .note-actions button { padding: 8px 14px; font-size: 14px; }
+    .app-status { border-color: #4b7983; background: #142b38; }
+    .app-status .status-line { margin: 9px 0; }
+    .app-status strong { display: inline; color: #e5f8ff; }
+    .app-status button { margin: 8px 0; }
+    .app-status .explain { font-size: 14px; color: #b0c8da; }
   </style>
 </head>
 <body>
   <main>
-    <div class="eyebrow">BYTE BACK · 5단계 서버 인증</div>
+    <div class="eyebrow">BYTE BACK · 설치형 접속 화면</div>
     <h1>내 자료실</h1>
     <p>로그인과 자료 요청을 서버 함수에서 처리하는 학습용 자료실입니다.</p>
+    <section id="app-status-section" class="panel app-status" aria-labelledby="app-status-heading">
+      <h2 id="app-status-heading">앱 설치와 기기 상태</h2>
+      <p class="status-line"><strong>실행 환경:</strong> <span id="app-mode-status">확인 중</span></p>
+      <p class="status-line"><strong>기기 승인:</strong> <span id="device-approval-status">서버 미확인 · 기기 승인 기능 연결 전</span></p>
+      <p id="connection-status" class="status-line" role="status" aria-live="polite">연결 상태 확인 중</p>
+      <button id="install-app-button" type="button" hidden>이 기기에 앱 설치</button>
+      <div id="device-actions" hidden>
+        <button id="device-request" type="button">이 기기 승인 요청</button>
+        <button id="device-refresh" type="button" hidden>승인 결과 확인</button>
+        <p class="explain" id="device-id-label"></p>
+      </div>
+      <p class="explain">앱 설치 여부는 기기 승인 증거가 아닙니다. 관리자 승인과 매 요청의 기기 서명을 서버에서 검증합니다.</p>
+      <p class="explain">기기 개인키는 현재 화면의 메모리에만 존재합니다. 새로고침하거나 종료하면 키가 사라져 다시 승인받아야 합니다. 오프라인에서는 보호 자료를 볼 수 없습니다.</p>
+    </section>
     <section id="login-section" class="panel" hidden>
       <h2>로그인</h2>
       <form id="login-form">
@@ -65,6 +89,11 @@
     <div class="notice">로그인은 서버를 통해 처리하며, 메모 API는 로그인과 자료 소유권을 검사합니다.</div>
   </main>
   <script type="module">
+    import { createDeviceClient } from '/device-client.js';
+    const deviceClient = createDeviceClient();
+    let deviceReady = false;
+    let currentEmail = '';
+
     const loginSection = document.querySelector('#login-section');
     const userSection = document.querySelector('#user-section');
     const notesSection = document.querySelector('#notes-section');
@@ -72,13 +101,121 @@
     const noteMessage = document.querySelector('#note-message');
     const list = document.querySelector('#notes');
     let viewVersion = 0;
+    const deviceStatusLabel = document.querySelector('#device-approval-status');
+    const deviceActions = document.querySelector('#device-actions');
+    const deviceRequestButton = document.querySelector('#device-request');
+    const deviceRefreshButton = document.querySelector('#device-refresh');
+    const deviceIdLabel = document.querySelector('#device-id-label');
+
+    deviceRequestButton.addEventListener('click', async () => {
+      deviceRequestButton.disabled = true;
+      deviceStatusLabel.textContent = '등록 요청 중';
+      try {
+        const result = await deviceClient.enroll();
+        deviceStatusLabel.textContent = '승인 대기 · 관리자 확인 필요';
+        deviceIdLabel.textContent = '승인 요청 ID: ' + result.deviceId;
+        deviceRefreshButton.hidden = false;
+        deviceRequestButton.hidden = true;
+      } catch (error) {
+        deviceStatusLabel.textContent = '등록 실패: ' + error.message;
+      } finally {
+        deviceRequestButton.disabled = false;
+      }
+    });
+
+    deviceRefreshButton.addEventListener('click', async () => {
+      deviceRefreshButton.disabled = true;
+      try {
+        const result = await deviceClient.checkApproval();
+        if (result.status === 'approved') {
+          deviceReady = true;
+          deviceStatusLabel.textContent = '서버 승인 확인 · 서명 가능';
+          deviceRefreshButton.hidden = true;
+          renderSession(true, currentEmail);
+        } else {
+          deviceReady = false;
+          deviceStatusLabel.textContent = '승인 상태: ' + result.status;
+        }
+      } catch (error) {
+        deviceReady = false;
+        deviceStatusLabel.textContent = '승인 확인 실패: ' + error.message;
+      } finally {
+        deviceRefreshButton.disabled = false;
+      }
+    });
+    // Installation is UI state only; it NEVER grants access to notes.
+    const appModeStatus = document.querySelector('#app-mode-status');
+    const connectionStatus = document.querySelector('#connection-status');
+    const installAppButton = document.querySelector('#install-app-button');
+    let pendingInstallPrompt = null;
+
+    function refreshAppMode() {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+      appModeStatus.textContent = standalone ? '설치형 앱 화면' : '웹 브라우저';
+    }
+    function refreshConnectionStatus() {
+      connectionStatus.textContent = navigator.onLine
+        ? '네트워크 연결 표시: 온라인 (서버 접속은 별도 확인 필요)'
+        : '네트워크 연결 표시: 오프라인 — 보호 자료를 볼 수 없습니다.';
+    }
+    refreshAppMode();
+    refreshConnectionStatus();
+    window.addEventListener('online', refreshConnectionStatus);
+    window.addEventListener('offline', refreshConnectionStatus);
+    window.addEventListener('appinstalled', () => {
+      pendingInstallPrompt = null;
+      installAppButton.hidden = true;
+      refreshAppMode();
+    });
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      pendingInstallPrompt = event;
+      installAppButton.hidden = false;
+    });
+    installAppButton.addEventListener('click', async () => {
+      if (!pendingInstallPrompt) return;
+      const promptEvent = pendingInstallPrompt;
+      pendingInstallPrompt = null;
+      installAppButton.hidden = true;
+      try {
+        await promptEvent.prompt();
+        await promptEvent.userChoice;
+      } catch {
+        // Browser controls installation UI. Authentication is unaffected.
+      }
+    });
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+          // Offline fallback is optional. Never grant access on SW failure.
+        });
+      });
+    }
 
     async function apiRequest(path, options = {}) {
+      const protectedRoute = /^\/api\/(notes(?:\/|$)|restore-note$|restore-test-policy$)/.test(path);
+      function hideNotesOnDeviceFailure() {
+        deviceReady = false;
+        notesSection.hidden = true;
+        list.replaceChildren();
+        deviceStatusLabel.textContent = '기기 서명 확인 실패 · 서버 재확인 필요';
+        deviceRefreshButton.hidden = false;
+      }
+      let signed = {};
+      try {
+        if (protectedRoute) signed = await deviceClient.signedHeaders(path, options);
+      } catch (error) {
+        if (protectedRoute) hideNotesOnDeviceFailure();
+        throw error;
+      }
       const response = await fetch(path, {
         credentials: 'same-origin',
         cache: 'no-store',
-        ...options
+        ...options,
+        headers: { ...(options.headers || {}), ...signed }
       });
+      if (protectedRoute && response.status === 403) hideNotesOnDeviceFailure();
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(data.error || `요청에 실패했습니다. (HTTP ${response.status})`);
@@ -90,17 +227,27 @@
 
     function renderSession(loggedIn, email = '') {
       const version = ++viewVersion;
+      if (!loggedIn) {
+        deviceClient.clear();
+        deviceReady = false;
+        deviceStatusLabel.textContent = '서버 미확인 · 기기 등록 필요';
+        deviceRequestButton.hidden = false;
+        deviceRefreshButton.hidden = true;
+        deviceIdLabel.textContent = '';
+      }
+      currentEmail = loggedIn ? email : '';
+      deviceActions.hidden = !loggedIn;
       loginSection.hidden = loggedIn;
       userSection.hidden = !loggedIn;
-      notesSection.hidden = !loggedIn;
-      if (loggedIn) {
+      notesSection.hidden = !loggedIn || !deviceReady;
+      if (loggedIn && deviceReady) {
         document.querySelector('#user-email').textContent = email;
         list.textContent = '메모를 불러오는 중입니다.';
         void loadNotes(version);
       } else {
         list.replaceChildren();
         noteMessage.textContent = '';
-        document.querySelector('#user-email').textContent = '';
+        document.querySelector('#user-email').textContent = loggedIn ? email : '';
       }
     }
 

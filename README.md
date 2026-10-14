@@ -349,3 +349,19 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 ### 100점 추가 항목 점검
 
 `npm install`을 새 클론에서 실행해 종료 코드를 직접 확인한다(미실행이면 미실행). `src/decider.mjs`는 `docs/DECIDER_REQUEST.md`에 명시된 요청 항목만 사용해야 하며 `RULE_IDS`는 실제 규칙 이름만 포함한다. `aleph.config.json.step`은 10이다. 로컬의 `npm.cmd run recovery:test`, `npm.cmd run decider:test`, `npm.cmd run detect:test`, `npm.cmd run fixture:7` 결과는 심판 결과와 구분한다.
+
+
+---
+
+## 11단계 — 설치형 접속 화면과 승인된 기기 서명
+
+- `public/manifest.webmanifest` 및 오프라인 안내로 PWA를 제공한다. 설치 상태만으로 기기 승인을 부여하지 않는다.
+- 로그인 후 공개키 등록은 `pending`으로만 생성하며, 관리자는 별도로 신원/기기를 확인하고 Supabase SQL Editor에서 승인한다.
+- 기기 P-256 개인키는 브라우저 메모리에만 보관하며 localStorage/sessionStorage/IndexedDB/cookie에 기록하지 않는다. 페이지 재시작 시 새 키와 재승인이 필요하다.
+- 보호 자료 API는 로그인·소유권 검사 외에 등록된 승인 공개키로 ECDSA SHA-256 서명을 검증하고, 메서드·정확한 경로+쿼리·JSON 본문 해시·타임스탬프·일회용 nonce를 서명에 결합한다.
+- nonce는 서버 DB에서 90초 만료와 일회 사용을 적용한다. 서명 없음/경로 변경/본문 변조/재전송은 403 거부한다.
+- 기기 승인 DB 설치: `sql/stage11-device-approval.sql`. 승인 대기 기기 목록과 독립 관리자 승인 SQL은 파일 마지막 주석에 있다.
+- 1~10단계의 이전 무서명 브라우저 자료 조회는 의도적으로 승인까지 차단된다. 10단계 내부 재시험 중 새 서명 없이 실행할 수 없는 것은 NOT_RUN으로 기록한다.
+- 판정기 `src/decider.mjs`는 엔진이 확인한 `deviceRegistered`만 사용하며 브라우저가 보내는 자의적 기기 상태를 신뢰하지 않는다.
+- 별도 네이티브 앱은 없으며, 실제 서명 키가 사라지는 메모리 전용 기기 등록의 한계가 있다.
+- 로컬 검증: `node --test scripts/stage11-device.test.mjs`, `node --test scripts/stage11-pwa.test.mjs`, `npm.cmd run decider:test`, `npm.cmd run detect:test`. 공식 심판 시험과 구분한다.
