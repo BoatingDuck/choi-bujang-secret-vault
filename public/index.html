@@ -86,10 +86,44 @@
       <h2>메모 목록</h2>
       <ul id="notes" aria-live="polite"></ul>
     </section>
+    <section id="ops-section" class="panel" hidden aria-labelledby="ops-heading">
+      <h2 id="ops-heading">탈환 작전실 · 검증 현황</h2>
+      <p>표시된 수치는 인증·기기 서명을 통과한 읽기 전용 서버 API 응답에서 가져옵니다. 가상 검사와 운영 실측을 혼동하지 않습니다.</p>
+      <button id="ops-refresh" type="button">작전실 상태 다시 확인</button>
+      <p id="ops-message" role="status" aria-live="polite">아직 실행하지 않았습니다.</p>
+      <p><strong>확인 시각</strong> <span id="ops-time">NOT_RUN</span></p>
+      <p><strong>판정기 규칙</strong> <span id="ops-decision">NOT_RUN</span></p>
+      <p><strong>탐지 사건</strong> <span id="ops-detection">NOT_RUN</span></p>
+      <p><strong>접속 회수</strong> <span id="ops-revocation">NOT_RUN</span></p>
+      <p><strong>검증된 복구 버전</strong> <span id="ops-recovery">NOT_RUN</span></p>
+      <p><strong>본인 메모 건수</strong> <span id="ops-notes-count">NOT_RUN</span></p>
+      <p><strong>41종 총공세</strong> <span id="ops-assault">NOT_RUN (실제 총공세 미검증)</span></p>
+      <details>
+        <summary>가린 서버 응답 확인 (비밀값·메모 본문 없음)</summary>
+        <pre id="ops-record" style="overflow-wrap:anywhere;white-space:pre-wrap">아직 조회하지 않았습니다.</pre>
+      </details>
+    </section>
+    <section id="ops-evidence-section" class="panel" hidden aria-labelledby="ops-evidence-heading">
+      <h2 id="ops-evidence-heading">탈환 작전실 · 1~11단계 통합 검증표</h2>
+      <p>안전한 API 요청만 실제로 전송합니다. 기대 HTTP와 관찰 HTTP를 비교하며, 실행하지 않은 항목은 NOT_RUN으로 남깁니다. 공식 41종 총공세와 별개입니다.</p>
+      <p>요청 ID는 이 브라우저에서 만든 <strong>로컬 대조 식별자</strong>로 서버의 추적 ID가 아닙니다. 시각은 브라우저에서 HTTP 응답을 확인한 UTC 시각입니다.</p>
+      <button id="ops-evidence-run" type="button">안전한 통합 API 검사 실행</button>
+      <button id="ops-evidence-export" type="button" disabled>가린 검증표 JSON 저장</button>
+      <p id="ops-evidence-message" role="status" aria-live="polite">NOT_RUN · 아직 요청을 실행하지 않았습니다.</p>
+      <p id="ops-evidence-assault">41종 총공세: NOT_RUN (공식 결과 없음)</p>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left">
+          <thead><tr><th>단계</th><th>시험</th><th>기대</th><th>실제 HTTP</th><th>검사</th><th>요청 ID (로컬)</th><th>확인 시각 (UTC)</th><th>비고</th></tr></thead>
+          <tbody id="ops-evidence-rows"></tbody>
+        </table>
+      </div>
+      <p>메모 응답 본문, 비밀번호, 기기 키, 토큰은 검증표에 수집하거나 저장하지 않습니다. 자동 시험의 POST 본문은 무효값만 사용하며 메모를 수정하지 않습니다.</p>
+    </section>
     <div class="notice">로그인은 서버를 통해 처리하며, 메모 API는 로그인과 자료 소유권을 검사합니다.</div>
   </main>
   <script type="module">
     import { createDeviceClient } from '/device-client.js';
+    import { runSafeEvidenceChecks } from '/ops-checks.js';
     const deviceClient = createDeviceClient();
     let deviceReady = false;
     let currentEmail = '';
@@ -97,6 +131,12 @@
     const loginSection = document.querySelector('#login-section');
     const userSection = document.querySelector('#user-section');
     const notesSection = document.querySelector('#notes-section');
+    const evidenceSection = document.querySelector('#ops-evidence-section');
+    const evidenceRows = document.querySelector('#ops-evidence-rows');
+    const evidenceMessage = document.querySelector('#ops-evidence-message');
+    const evidenceExport = document.querySelector('#ops-evidence-export');
+    let evidenceReport = null;
+    const opsSection = document.querySelector('#ops-section');
     const authMessage = document.querySelector('#auth-message');
     const noteMessage = document.querySelector('#note-message');
     const list = document.querySelector('#notes');
@@ -194,10 +234,15 @@
     }
 
     async function apiRequest(path, options = {}) {
-      const protectedRoute = /^\/api\/(notes(?:\/|$)|restore-note$|restore-test-policy$)/.test(path);
+      const protectedRoute = /^\/api\/(notes(?:\/|$)|restore-note$|restore-test-policy$|ops\/status$)/.test(path);
       function hideNotesOnDeviceFailure() {
         deviceReady = false;
         notesSection.hidden = true;
+        opsSection.hidden = true;
+        evidenceSection.hidden = true;
+        evidenceReport = null;
+        evidenceRows.replaceChildren();
+        evidenceExport.disabled = true;
         list.replaceChildren();
         deviceStatusLabel.textContent = '기기 서명 확인 실패 · 서버 재확인 필요';
         deviceRefreshButton.hidden = false;
@@ -240,16 +285,137 @@
       loginSection.hidden = loggedIn;
       userSection.hidden = !loggedIn;
       notesSection.hidden = !loggedIn || !deviceReady;
+      opsSection.hidden = !loggedIn || !deviceReady;
+      evidenceSection.hidden = !loggedIn || !deviceReady;
+      if (!loggedIn || !deviceReady) {
+        evidenceReport = null;
+        evidenceRows.replaceChildren();
+        evidenceExport.disabled = true;
+        evidenceMessage.textContent = "NOT_RUN · 세션 또는 기기 승인 필요";
+      }
+      if (!loggedIn) {
+        document.querySelector("#ops-record").textContent = "아직 조회하지 않았습니다.";
+        document.querySelector("#ops-message").textContent = "아직 실행하지 않았습니다.";
+      }
       if (loggedIn && deviceReady) {
         document.querySelector('#user-email').textContent = email;
         list.textContent = '메모를 불러오는 중입니다.';
         void loadNotes(version);
+        void loadOps(version);
       } else {
         list.replaceChildren();
         noteMessage.textContent = '';
         document.querySelector('#user-email').textContent = loggedIn ? email : '';
       }
     }
+
+    async function loadOps(version) {
+      const refresh = document.querySelector('#ops-refresh');
+      refresh.disabled = true;
+      document.querySelector('#ops-message').textContent = '서버 실측값을 확인하는 중입니다.';
+      try {
+        const data = await apiRequest('/api/ops/status');
+        if (version !== viewVersion || !deviceReady) return;
+        if (data.schema !== 'byteback.ops.v1' || !data.checkedAt ||
+            !Array.isArray(data.decision?.ruleIds)) throw new Error('작전실 응답 형식 오류');
+        document.querySelector('#ops-time').textContent = data.checkedAt;
+        document.querySelector('#ops-decision').textContent =
+          data.decision.ruleCount + '개 (' + data.decision.ruleIds.join(', ') +
+          ') · 실제 엔진 판정 ' + data.decision.liveEngineDecision;
+        document.querySelector('#ops-detection').textContent =
+          '가상 검사 ' + data.detection.status + ' · 정상 ' +
+          data.detection.normalRequestCount + '건: ' + data.detection.normalAction +
+          ' / 폭주 ' + data.detection.burstRequestCount + '건: ' + data.detection.burstAction +
+          ' · 실제 엔진 사건 ' + data.detection.realEngineEvents;
+        document.querySelector('#ops-revocation').textContent =
+          '실제 회수 ' + data.revocation.actualEngineRevocation +
+          ' (가상 회수 제안은 실제 회수가 아님)';
+        document.querySelector('#ops-recovery').textContent = data.recovery.status === 'VERIFIED'
+          ? data.recovery.backupVersion + ' · revision ' + data.recovery.revision +
+            ' · 달라진 필드 ' + data.recovery.changedFields.length + '개 (분리된 시험 정책)'
+          : 'UNAVAILABLE (DB 사본 확인 실패 또는 미연결)';
+        document.querySelector('#ops-notes-count').textContent = data.notes.status === 'VERIFIED'
+          ? data.notes.ownedCount + '건 (소유자 기준, 본문 미전송)'
+          : 'UNAVAILABLE';
+        document.querySelector('#ops-assault').textContent =
+          data.totalAssaultTests.status + ' · 전체 ' + data.totalAssaultTests.total +
+          '종, 공식 실행 확인 전';
+        // The server returns only masked metadata. Never insert raw HTML.
+        document.querySelector('#ops-record').textContent = JSON.stringify(data, null, 2);
+        document.querySelector('#ops-message').textContent = '서버 응답 수신 (요청 ID: ' + data.requestId + ')';
+      } catch (error) {
+        if (version !== viewVersion) return;
+        document.querySelector('#ops-message').textContent = '작전실 조회 실패: ' + error.message;
+        for (const id of ['ops-time', 'ops-decision', 'ops-detection', 'ops-revocation',
+          'ops-recovery', 'ops-notes-count', 'ops-assault']) {
+          document.querySelector('#' + id).textContent = 'NOT_RUN / UNAVAILABLE';
+        }
+        document.querySelector('#ops-record').textContent = '조회 실패 · 이전 결과를 현재 실측으로 취급하지 않습니다.';
+      } finally {
+        refresh.disabled = false;
+      }
+    }
+    document.querySelector('#ops-refresh').addEventListener('click', () => {
+      if (deviceReady) void loadOps(viewVersion);
+    });
+
+    function addEvidenceRow(row) {
+      const tr = document.createElement('tr');
+      const cells = [row.step, row.scenario, row.expected,
+        row.observedHttp ?? '—', row.result, row.requestId ?? '—',
+        row.checkedAt ?? '—', row.detail || '—'];
+      for (const value of cells) {
+        const td = document.createElement('td');
+        td.textContent = String(value);
+        td.style.borderTop = '1px solid #51667c';
+        td.style.padding = '8px';
+        tr.append(td);
+      }
+      evidenceRows.append(tr);
+    }
+
+    document.querySelector('#ops-evidence-run').addEventListener('click', async () => {
+      if (!deviceReady) return;
+      const button = document.querySelector('#ops-evidence-run');
+      const version = viewVersion;
+      button.disabled = true;
+      evidenceReport = null;
+      evidenceExport.disabled = true;
+      evidenceRows.replaceChildren();
+      evidenceMessage.textContent = '안전한 API 요청을 실제로 확인하는 중입니다.';
+      const active = () => version === viewVersion && deviceReady;
+      try {
+        const report = await runSafeEvidenceChecks({
+          fetchImpl: fetch,
+          signedHeaders: (path, options) => deviceClient.signedHeaders(path, options),
+          newId: () => crypto.randomUUID(),
+          now: () => new Date().toISOString(),
+          active,
+          onRow: row => { if (active()) addEvidenceRow(row); }
+        });
+        if (!active()) return;
+        evidenceReport = report;
+        evidenceExport.disabled = false;
+        evidenceMessage.textContent = 'HTTP 기대 일치 ' + report.counts.match +
+          '건 · 불일치 ' + report.counts.mismatch + '건 · 응답 미확인 ' +
+          report.counts.unavailable + '건 · NOT_RUN ' + report.counts.notRun +
+          '건 (공식 41종 별도 미실행)';
+      } catch (error) {
+        if (active()) evidenceMessage.textContent = '검증표 오류: ' + error.message;
+      } finally { button.disabled = false; }
+    });
+
+    evidenceExport.addEventListener('click', () => {
+      if (!evidenceReport || !deviceReady) return;
+      const blob = new Blob([JSON.stringify(evidenceReport, null, 2)],
+        { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'stage12-evidence-redacted.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
 
     async function loadNotes(version) {
       try {

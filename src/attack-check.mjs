@@ -236,7 +236,7 @@ async function runStage3Checks(config) {
 }
 
 export async function runAttackChecks(config) {
-  if (config.step === 9 || config.step === 10 || config.step === 11) {
+  if (config.step === 9 || config.step === 10 || config.step === 11 || config.step === 12) {
     const results = await runStage4Checks(config, config.step);
     const { detect } = await import('./detect.mjs');
     const start = Date.UTC(2026, 9, 1);
@@ -268,7 +268,7 @@ export async function runAttackChecks(config) {
       expected: '121건 조회는 해당 가상 사용자 회수 제안',
       observed: '로컬 탐지 점검 통과: propose_revocation'
     });
-    if (config.step === 10 || config.step === 11) {
+    if (config.step === 10 || config.step === 11 || config.step === 12) {
       const restoreUnauthenticated = await fetch(new URL(config.restoreRoute, config.publicAppUrl), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: '11111111-1111-4111-8111-111111111111', confirm: true }),

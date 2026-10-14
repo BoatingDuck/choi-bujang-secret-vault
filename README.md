@@ -365,3 +365,15 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 판정기 `src/decider.mjs`는 엔진이 확인한 `deviceRegistered`만 사용하며 브라우저가 보내는 자의적 기기 상태를 신뢰하지 않는다.
 - 별도 네이티브 앱은 없으며, 실제 서명 키가 사라지는 메모리 전용 기기 등록의 한계가 있다.
 - 로컬 검증: `node --test scripts/stage11-device.test.mjs`, `node --test scripts/stage11-pwa.test.mjs`, `npm.cmd run decider:test`, `npm.cmd run detect:test`. 공식 심판 시험과 구분한다.
+
+
+---
+
+## 12단계 저장점 — 탈환 작전실과 검증 근거
+
+- 작전실의 판정 규칙은 학생 코드 `src/decider.mjs`의 `RULE_IDS`를 기준으로 보여준다. 탐지 사건은 가상 fixture/실제 엔진 사건을 구분하며 회수·복구의 미연결/미확인 결과는 `NOT_RUN`으로 표시한다.
+- 메모 내용·키·토큰 없이 안전한 HTTP 요청의 기대 결과·관찰 결과·로컬 요청 ID·UTC 확인 시각을 표로 모은다. 정상 허용과 금지 거부는 **실제 관찰된 요청**만 근거로 한다.
+- 공식 41종 공격은 채점기 결과가 제공되기 전까지 `NOT_RUN`; 로컬 fixture PASS를 공식 결과로 바꾸지 않는다.
+- 12단계 번들 검사 지원: `src/attack-check.mjs`의 12단계 분기 포함. `aleph.config.json.step = 12`.
+- **설치·실행·중지·복구** 및 학생 제작 코드와 제공 **ALEPH SDP 엔진**의 책임 구분: [docs/STAGE12.md](docs/STAGE12.md).
+- 검사: `node --test .\scripts\stage12-ops.test.mjs`, `node --test .\scripts\stage12-evidence.test.mjs`, `node --test .\scripts\stage12-checkpoint.test.mjs`; 로컬 통과는 실제 운영/심판 증거가 아니다.
