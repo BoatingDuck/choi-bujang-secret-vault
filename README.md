@@ -312,3 +312,40 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 시험 정책 및 단일 메모 복구 구현과 미실행 항목은 `docs/STAGE10.md` 참조.
 - 로컬 재검사: `npm.cmd run recovery:test`, `npm.cmd run decider:test`, `npm.cmd run detect:test`.
 - 실제 복원 전 비공개 B 메모 백업 확보 및 검증이 필수다.
+
+---
+
+## 10단계 보완 — 안전한 시험 정책 사본과 단일 메모 복원 (2026-10-14)
+
+**서비스:** Vercel Node.js API + Supabase PostgreSQL.
+**메모 복원:** `POST /api/restore-note` (설정: `aleph.config.json`의 `restoreRoute`).
+**시험 정책 미리보기/적용:** `POST /api/restore-test-policy`.
+**DB 설치:** `sql/stage10-test-policy.sql`을 Supabase SQL Editor에서 관리자가 실행한 뒤에만 시험 정책 경로를 사용한다. 새로운 테이블은 `recovery_private.stage10_test_policy_*`로 한정되며 실제 `public.notes`, 운영 RLS, GRANT, `auth.audit_log_entries`를 수정하지 않는다.
+
+### 제작 1. 정책 사본 검증 및 미리보기
+
+`src/policy-recovery.mjs`는 버전 `owner-notes-v1`의 안전한 시험 정책을 고정 SHA-256과 비교한다. 실행할 때마다 비공개 DB 백업을 다시 읽어 버전/내용/해시를 대조한다. 없거나 일치하지 않으면 중단한다. `{ "confirm": false }`를 `POST /api/restore-test-policy`에 보내면 버전, 백업 SHA-256, 현재 revision, 변경 대상 필드만 응답한다. 시험 정책 외 서비스의 속성은 비교·변경 대상에 포함하지 않는다.
+
+### 제작 2. 분리된 시험 정책 적용
+
+미리보기 결과의 `revision`과 `backupSha256`을 각각 `expectedRevision`, `expectedSha256`에 넣고 `{ "confirm": true }`로 재요청한다. DB 함수는 동시성 잠금 아래 검증 사본과 현재 버전을 재검사하고, **시험 정책 테이블의 안전 정책 키만** 덮어쓴다. 미리보기 누락·버전 충돌·사본 무결성 오류 시 적용하지 않는다. 다른 서비스 설정 및 인증 감사 기록은 이 경로에서 수정하지 않는다.
+
+학생 B로 API를 시험하려면 Vercel 서버 전용 환경변수 `STAGE10_TEST_B_USER_ID`에 **B 계정의 UUID만** 등록한 뒤 재배포한다. 심판의 서명된 B 신원은 해당 환경변수 없이 검증한다. 일반 사용자 A 및 심판 A는 시험 정책 적용이 금지된다. UUID나 인증 토큰을 제출 기록에 기입하지 않는다.
+
+### 제작 3. 비공개 가상 메모 한 건 복원
+
+`POST /api/restore-note`는 `{ "id": "대상 UUID", "confirm": false }`에서 복원 미리보기를, `{ "id": "대상 UUID", "confirm": true }`에서 사본 재확인과 해당 한 건 복원을 수행한다. `recovery_private.note_snapshots`의 `stage10_read_note_snapshot` RPC(서버 권한만 실행), 또는 별도 사전 검증된 레거시 사본을 사용한다. 사본 ID·소유자·버전·SHA-256이 맞지 않으면 쓰기 전에 중단한다. 다른 메모나 운영 정책, 감사 기록에 대한 변경 요청은 하지 않는다.
+
+해시 체계는 출처별로 다르다. `private_snapshot`은 UTF-8 `title` + NUL + UTF-8 `content`의 SHA-256이고, `legacy_snapshot`은 `src/note-recovery.mjs`의 `noteDigest`다. 성공 응답의 `sha256`은 **검증된 사본과 동일한 해시**이며 `hashScheme`은 규칙을 표시한다. 성공 직후 복원 대상의 ID·소유자·해시를 DB에서 다시 검사한다. 사본이 없거나 변조되면 복원하지 않는다.
+
+### 제작 4. 재시험과 실행 범위
+
+순서: (1) 백업 미리보기와 검증 → (2) 안전한 시험 메모 한 건 복원 → (3) 복원 대상 소유자 정상 조회 → (4) 비로그인 조회 거부 → (5) 위조 토큰 거부 → (6) 타인 메모 조회 거부 → (7) 별도 안전한 환경에서 과거 1~9단계 정상·거부 검사를 실제로 반복한다. 타인 메모 PUT/DELETE, 감사 이력 전체 비교 및 일부 과거 단계는 자동 재시험에서 실행하지 않으므로 `NOT_RUN`으로 기록한다. 실행 결과는 실제 JSON의 `retest.checks`를 확인한다.
+
+**2026-10-14 실제 학생 B 검증:** DB 메모 6건에 사본이 있고 사본 해시 6건 일치. 학생 B의 시험용 메모 복원 API 200, `restored: true`; 복원 후 인프로세스 API 핸들러 조회 검사에서 본인 200, 비로그인 401, 잘못된 토큰 401, 타인 조회 404. 이는 **공식 심판 B 계정 및 1~9단계 전체 재시험을 통과했다는 뜻이 아니다.** `S10_BACKUP_UNVERIFIED`, `S10_RESTORE_MISMATCH`, `S10_RETEST_MISSING`은 심판 재평가 전까지 미확정이다.
+
+**과거 사본 주의:** 새 SQL을 설치한 날짜보다 이전의 침해에 대해 사본이 존재했다고 주장할 수 없다. 과거 시점의 사본 증거는 실제 백업 생성 기록과 별도로 확인해야 한다.
+
+### 100점 추가 항목 점검
+
+`npm install`을 새 클론에서 실행해 종료 코드를 직접 확인한다(미실행이면 미실행). `src/decider.mjs`는 `docs/DECIDER_REQUEST.md`에 명시된 요청 항목만 사용해야 하며 `RULE_IDS`는 실제 규칙 이름만 포함한다. `aleph.config.json.step`은 10이다. 로컬의 `npm.cmd run recovery:test`, `npm.cmd run decider:test`, `npm.cmd run detect:test`, `npm.cmd run fixture:7` 결과는 심판 결과와 구분한다.

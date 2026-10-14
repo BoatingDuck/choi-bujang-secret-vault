@@ -1,24 +1,59 @@
-# 10단계 백업 및 복구 계획
+# 10단계 — 실제 복구 범위와 실패 시 중단 조건
 
-## 중요한 구분
-- `src/policy-recovery.mjs`는 시험 정책 객체의 사본 확인·변경 범위 표시·시험 정책 복원만 수행한다. Supabase 운영 RLS/GRANT는 수정하지 않는다.
-- `api/restore-note.js`는 **서버 전용** `RESTORE_NOTE_SNAPSHOT_B64` 사본이 사전에 안전하게 준비되고 검증되었을 때만 단일 메모 복원을 허용한다. 이 값은 Git이나 로그에 넣지 않는다.
-- 과거에 존재하지 않은 백업을 생성하여 `침해 전 백업`이라고 주장할 수 없다. 안전한 상태에서 B의 시험 메모를 사전 비공개로 백업하고 검증한 이후에만 복원 실험을 진행한다.
-- 복구 경로: `POST /api/restore-note`. 인증된 해당 사본 소유자만 실행 가능하며 요청은 `{ "id": "백업한 메모 UUID", "confirm": true }`이다.
-- 복구 대상의 ID·소유자·제목·내용 SHA-256을 사본과 비교하며, 다른 메모와 감사 기록을 수정하지 않는다.
+## 제작 1. 침해 전 검증된 시험 정책 백업
 
-## 실행 및 재시험 순서
-1. `node scripts/recovery-test.mjs` (로컬 시험 정책/가상 메모만 검사)
-2. 1~9단계 연습: `npm.cmd run decider:test`, `npm.cmd run detect:test`, `npm.cmd run fixture:7`; 그 밖의 기존 테스트는 실제 실행 결과를 기록한다.
-3. 안전한 시점에 B의 메모 한 건을 **비공개**로 보관하고 JSON `{ id, ownerId, title, body, sha256 }`를 준비한다. 해시는 `src/note-recovery.mjs`의 `noteDigest`와 동일한 규칙으로 계산한다. 내용이나 토큰은 Git/README/챗에 올리지 않는다.
-4. 해당 JSON의 UTF-8 바이트를 base64로 인코딩하여 Vercel **서버 환경변수** `RESTORE_NOTE_SNAPSHOT_B64`에만 등록한다. 배포 후 테스트 B 계정으로 한 건의 POST 복원을 직접 실행한다. 타인 메모는 복원할 수 없어야 한다.
-5. 실제 B 메모의 변경/삭제 시험 및 복구는 사본 검증이 끝나고 데이터 유실을 감수할 수 있는 시험 환경에서만 실행한다.
-6. A 정상 요청 허용, B의 A 자료 GET/PUT/DELETE 거부, 비로그인 401, 메모 복구 후 ID·owner·hash 일치 여부 및 감사 이력 불변 여부를 직접 확인한다. **실행하지 않았으면 미실행으로 기록한다.**
-7. `aleph.config.json`의 step 10, restoreRoute 및 실제 배포 상태를 대조한다. `src/attack-check.mjs`의 10단계 분기 및 배포 식별 step 10을 검증한다.
+- `src/policy-recovery.mjs`의 `SAFE_POLICY`는 **운영 Supabase 정책이 아니라 시험 데이터**다.
+- 정책 백업은 `recovery_private.stage10_test_policy_backup`에 별도로 저장된다. 버전 `owner-notes-v1`과 SHA-256 고정값에 일치해야 사용한다.
+- DB의 백업에 UPDATE/DELETE를 금지하는 트리거를 둔다. 이 구조가 설치되기 전 시점의 사본이 존재했다고 주장할 수는 없다.
+- 미리보기 `POST /api/restore-test-policy` `{ "confirm": false }`: 백업 버전·고정 해시·현재 revision·변경될 필드를 반환한다.
+- 저장된 백업이 없거나 값이 다르면 미리보기 및 복원을 모두 중단한다.
 
-## 검증 상태
-- 로컬 가상 단위 검사: 실행 후 결과 기입
-- 운영 DB 백업/복원: 미실행
-- 실제 정책 복구: 미실행 (시험 정책 객체만 구현)
-- A/B 계정 교차 접근 재검증: 미실행
-- 1~9단계 재시험: 미실행
+## 제작 2. 시험 정책만 복구
+
+- 요청 `{ "confirm": true, "expectedRevision": <미리보기 revision>, "expectedSha256": "<미리보기 backupSha256>" }`.
+- SQL `stage10_policy_apply`는 DB 트랜잭션 및 행 잠금에서 사본 검증을 반복하고, 실험용 정책 키만 업데이트한다.
+- 기타 시험 설정 키·다른 서비스 규칙을 보존한다. 운영 `public.notes`, 운영 RLS, GRANT, 인증 감사 테이블은 변경하지 않는다.
+- 테스트 계정 B는 `STAGE10_TEST_B_USER_ID` 서버 설정으로 명시적으로 허용할 수 있고, 공식 심판 B는 서명된 신원으로 식별한다.
+
+## 제작 3. 지정된 B 메모 하나만 복구
+
+- `POST /api/restore-note` 서비스: 배포 Vercel 서버 함수 / Supabase 서비스 역할 백업 조회.
+- 미리보기 `{ "id": "uuid", "confirm": false }`: 비공개 사본 검증 후 버전 및 변경 필드를 반환한다.
+- 적용 `{ "id": "uuid", "confirm": true }`: 검증된 사본을 **다시 읽고**, ID·소유자·버전·해시와 변경 사항을 비교하여 같은 UUID 한 건만 업데이트/삽입한다.
+- 기록 복원 후 DB를 재조회하고 사본과 동일한 ID·소유자·해시인지 검사한다. 해시의 범위는 사본 출처에 따른 `hashScheme`으로 표시한다.
+- DB 사본 부재/불일치, 소유자 불일치, 쓰기 실패는 성공으로 보고하지 않는다.
+- 다른 메모/감사 기록은 이 복원 함수에서 수정하지 않는다. 감사 로그의 이전·이후 전체 비교는 별도 수행하지 않았다.
+
+## 제작 4. 복구 뒤 재시험 기록
+
+1. 사본 미리보기/버전/변경 범위 확인, 검증 실패 시 중단.
+2. 시험 정책 적용 전 미리보기 확인, revision 및 SHA-256 지정, 다른 서비스 규칙 보존 확인.
+3. 시험 B 메모 한 건 복원 후 본인 GET이 200인지 확인.
+4. 비로그인 GET이 401인지 확인.
+5. 잘못된 JWT의 GET이 401인지 확인.
+6. B에서 A 소유 메모 GET이 404인지 확인.
+7. B에서 A 소유 메모 PUT/DELETE 404는 안전한 별도 실습 환경에서만 확인. 자동 재시험에서는 `NOT_RUN`이다.
+8. 과거 1~9단계 정상·금지 테스트 중 `decider:test`, `detect:test`, `fixture:7`과 실제 배포 점검을 다시 실행한다. 심판 계정으로 수행하지 않은 시험은 `NOT_RUN`으로 구분한다.
+9. 감사 기록의 사전·사후 해시 또는 건수 비교는 수행한 경우에만 PASS로 기록한다.
+
+## 사용자에게서 확인된 실제 결과 (2026-10-14)
+
+- DB 사본 연결 6/6, 저장된 백업 SHA-256 검증 6/6.
+- 배포된 B 계정 메모 복원 HTTP 200 및 `restored: true`.
+- 복원 직후 서버 내부 API 핸들러 재시험: 본인 GET 200, 비로그인 GET 401, 위조 JWT GET 401, 타인 GET 404.
+- PUT/DELETE 타인 요청, 감사 이력 전체 비교, 공식 1~9단계 재시험 및 심판 B 복원은 `NOT_RUN`/미확인.
+- 실제 Supabase 운영 정책에 대한 복원은 수행하지 않는다.
+
+## 실행 명령
+
+```powershell
+npm.cmd run recovery:test
+node .\scripts\policy-verify.test.mjs
+npm.cmd run decider:test
+npm.cmd run detect:test
+npm.cmd run fixture:7
+node --check .\api\restore-note.js
+node --check .\api\restore-test-policy.js
+```
+
+최종 심판 판정 전까지 세 실패 코드의 해결 여부를 확정하지 않는다.

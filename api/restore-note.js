@@ -99,7 +99,9 @@ function safePreview(backup, current) {
   return {
     version: backup.version,
     id: backup.id,
+    ownerId: backup.ownerId,
     source: backup.source,
+    backupSha256: backup.sha256,
     changedFields: current
       ? [
           ...(current.title === backup.title ? [] : ['title']),
@@ -459,12 +461,10 @@ export default async function handler(req, res) {
       id,
       ownerId: user.userId,
       version: rechecked.version,
-      sha256: noteDigest({
-        id,
-        ownerId: user.userId,
-        title: verified.title,
-        body: verified.content
-      }),
+      sha256: rechecked.sha256,
+      hashScheme: rechecked.source === 'private_snapshot'
+        ? 'sha256(title-NUL-content)'
+        : 'sha256(note-json)',
       preview,
       retest: await runRecoveryRetests(
         req, supabase, user, id, verified
