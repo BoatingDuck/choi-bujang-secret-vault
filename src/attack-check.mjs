@@ -245,6 +245,9 @@ async function runStage12ReadOnlyChecks(config) {
     throw new Error('12단계 공개 HTTPS 배포 주소를 확인해 주세요.');
   }
 
+  // Local GET/fixture probes are not a judge-correlated request trace.
+  // The judge reported no request record for these attackIds. Therefore
+  // no positive observation can be submitted without such evidence.
   const results = [];
   const request = path => fetch(new URL(path, app), {
     method: 'GET', cache: 'no-store', redirect: 'error'
@@ -253,7 +256,7 @@ async function runStage12ReadOnlyChecks(config) {
     const response = await request(path);
     const passed = await valid(response);
     if (!passed) throw new Error(attackId + ' 확인 실패: HTTP ' + response.status);
-    results.push({ attackId, expected, observed: '실제 GET HTTP ' + response.status });
+    results.push({ attackId, expected, observed: 'not_run' });
   };
   const json401 = async response => {
     if (response.status !== 401) return false;
@@ -272,7 +275,7 @@ async function runStage12ReadOnlyChecks(config) {
   });
   if (!await json401(invalid)) throw new Error('invalid_jwt 확인 실패: HTTP ' + invalid.status);
   results.push({ attackId: 'invalid_jwt', expected: '잘못된 JWT GET 401',
-    observed: '실제 GET HTTP ' + invalid.status });
+    observed: 'not_run' });
 
   await check('static_note_exposure', '공개 data.json GET 404', '/data.json',
     response => response.status === 404);
@@ -281,7 +284,7 @@ async function runStage12ReadOnlyChecks(config) {
   const deployedId = deployed.status === 200 ? await deployed.json().catch(() => null) : null;
   if (deployedId?.step !== 12) throw new Error('12단계 배포 식별 파일 검증 실패');
   results.push({ attackId: 'deployment_identity',
-    expected: '배포 식별 파일 12단계', observed: '실제 GET HTTP 200, step 12' });
+    expected: '배포 식별 파일 12단계', observed: 'not_run' });
 
   // This is an explicitly labelled local virtual fixture, NOT engine revocation.
   const { detect } = await import('./detect.mjs');
@@ -297,9 +300,9 @@ async function runStage12ReadOnlyChecks(config) {
     throw new Error('12단계 가상 탐지 검사 실패');
   }
   results.push({ attackId: 'normal_read_preserved',
-    expected: '가상 조회 120건 observe', observed: '로컬 가상 검사: observe' });
+    expected: '가상 조회 120건 observe', observed: 'not_run' });
   results.push({ attackId: 'burst_read_revocation',
-    expected: '가상 조회 121건 회수 제안', observed: '로컬 가상 검사: propose_revocation (실제 회수 아님)' });
+    expected: '가상 조회 121건 회수 제안', observed: 'not_run' });
 
   // Judge sandbox permits public GET/HEAD only; NEVER send write requests.
   results.push({ attackId: 'restore_unauthenticated_denied',
