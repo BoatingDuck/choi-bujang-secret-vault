@@ -110,6 +110,168 @@ function safePreview(backup, current) {
   };
 }
 
+
+
+async function runRecoveryRetests(req, supabase, user, id, expected) {
+  const { default: noteHandler } = await import('./notes/[id].js');
+  const { default: listHandler } = await import('./notes.js');
+
+  const checks = {};
+
+  // ?? ??? ?? API ???? ????.
+  // ?? ??? ?? ??? URL? ???? ???.
+  async function invoke(handler, method, headers, query = {}) {
+    let statusCode = 200;
+    let result = null;
+
+    const response = {
+      setHeader() { return this; },
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(value) {
+        result = value;
+        return this;
+      }
+    };
+
+    await handler({
+      method,
+      headers,
+      query,
+      body: undefined
+    }, response);
+
+    return {
+      http: statusCode,
+      data: result
+    };
+  }
+
+  async function check(name, fn) {
+    try {
+      checks[name] = await fn();
+    } catch {
+      checks[name] = {
+        status: 'FAIL',
+        reason: 'HANDLER_EXECUTION_FAILED'
+      };
+    }
+  }
+
+  const credentials = req.headers.authorization
+    ? { authorization: req.headers.authorization }
+    : { cookie: req.headers.cookie };
+
+  // ??: ??? ???? ?? ??? ?? ? ??? ??.
+  await check('owner_read', async () => {
+    const r = await invoke(noteHandler, 'GET', credentials, { id });
+
+    const passed =
+      r.http === 200 &&
+      r.data?.id === id &&
+      r.data?.title === expected.title &&
+      r.data?.body === expected.content;
+
+    return {
+      status: passed ? 'PASS' : 'FAIL',
+      http: r.http
+    };
+  });
+
+  // ??: ???? ?? ??
+  await check('unauthenticated_read', async () => {
+    const r = await invoke(listHandler, 'GET', {});
+    return {
+      status: r.http === 401 ? 'PASS' : 'FAIL',
+      http: r.http
+    };
+  });
+
+  // ??: ??? ?? ??
+  await check('invalid_token_read', async () => {
+    const r = await invoke(listHandler, 'GET', {
+      authorization: 'Bearer invalid.invalid.invalid'
+    });
+
+    return {
+      status: r.http === 401 ? 'PASS' : 'FAIL',
+      http: r.http
+    };
+  });
+
+  // ??: ?? ??? ?? ?? ??
+  await check('cross_owner_read', async () => {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('note_uuid')
+      .neq('owner_id', user.userId)
+      .limit(1);
+
+    if (error) {
+      return {
+        status: 'FAIL',
+        reason: 'TARGET_LOOKUP_FAILED'
+      };
+    }
+
+    if (!data?.length) {
+      return {
+        status: 'NOT_RUN',
+        reason: 'NO_OTHER_OWNER_NOTE'
+      };
+    }
+
+    const r = await invoke(
+      noteHandler,
+      'GET',
+      credentials,
+      { id: data[0].note_uuid }
+    );
+
+    return {
+      status: r.http === 404 ? 'PASS' : 'FAIL',
+      http: r.http
+    };
+  });
+
+  // ?? ???? ?? ??? PASS? ??? ???.
+  checks.cross_owner_put = {
+    status: 'NOT_RUN',
+    reason: 'DESTRUCTIVE_REQUEST_NOT_SENT'
+  };
+
+  checks.cross_owner_delete = {
+    status: 'NOT_RUN',
+    reason: 'DESTRUCTIVE_REQUEST_NOT_SENT'
+  };
+
+  checks.audit_history = {
+    status: 'NOT_RUN',
+    reason: 'NO_AUDIT_BASELINE'
+  };
+
+  checks.prior_stage_full_replay = {
+    status: 'NOT_RUN',
+    reason: 'NOT_EXECUTED'
+  };
+
+  const values = Object.values(checks);
+  const failed = values.some(x => x.status === 'FAIL');
+  const incomplete = values.some(x => x.status === 'NOT_RUN');
+
+  return {
+    status: failed
+      ? 'FAIL'
+      : incomplete
+        ? 'PARTIAL_PASS'
+        : 'PASS',
+    execution: 'IN_PROCESS_API_HANDLERS',
+    checks
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -304,10 +466,12 @@ export default async function handler(req, res) {
         body: verified.content
       }),
       preview,
-      retest: {
-        status: 'NOT_RUN',
-        reason: 'Separate authenticated A/B retest required'
-      }
+      retest: await runRecoveryRetests(
+        req, supabase, user, id, verified
+      ).catch(() => ({
+        status: 'FAIL',
+        reason: 'RETEST_EXECUTION_FAILED'
+      }))
     });
   } catch (error) {
     const code = error?.message === 'backup_missing' ? 503 : 409;
