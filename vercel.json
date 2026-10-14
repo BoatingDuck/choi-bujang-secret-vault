@@ -4,6 +4,12 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/threat-intel",
+      "destination": "/api/ai?stub=threat-intel"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
