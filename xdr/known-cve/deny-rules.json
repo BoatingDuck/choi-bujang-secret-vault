@@ -1,0 +1,61 @@
+{
+  "schema": "aleph.xdr.deny-proposals.v1",
+  "rules": [
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.10",
+      "evidenceAlertId": "kc-01",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.10",
+      "evidenceAlertId": "kc-02",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.16",
+      "evidenceAlertId": "kc-03",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.16",
+      "evidenceAlertId": "kc-04",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.24",
+      "evidenceAlertId": "kc-05",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.24",
+      "evidenceAlertId": "kc-06",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.24",
+      "evidenceAlertId": "kc-07",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.31",
+      "evidenceAlertId": "kc-08",
+      "expiresAt": "2026-10-15T01:32:17.854Z",
+      "reason": "log4shell_remote_jndi_lookup"
+    }
+  ]
+}

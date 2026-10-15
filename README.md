@@ -377,3 +377,14 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 12단계 번들 검사 지원: `src/attack-check.mjs`의 12단계 분기 포함. `aleph.config.json.step = 12`.
 - **설치·실행·중지·복구** 및 학생 제작 코드와 제공 **ALEPH SDP 엔진**의 책임 구분: [docs/STAGE12.md](docs/STAGE12.md).
 - 검사: `node --test .\scripts\stage12-ops.test.mjs`, `node --test .\scripts\stage12-evidence.test.mjs`, `node --test .\scripts\stage12-checkpoint.test.mjs`; 로컬 통과는 실제 운영/심판 증거가 아니다.
+
+## 보너스 XDR-03 — 알려진 취약점 악용 탐지
+
+- CVE-2021-44228 및 MITRE ATT&CK T1190 기반 탐지
+- 명확한 원격 JNDI 조회만 차단 후보로 분류
+- 애매한 경보는 알림, 정상 이벤트는 기록
+- 기존 ZTNA 판정기 규칙 변경 없음
+- 실행: npm run xdr:run -- known-cve
+- 세부 구현 및 시험: docs/KNOWN_CVE.md
+- 거부 규칙 후보는 오프라인 제안이며 실제 정책에 자동 적용되지 않음
+
