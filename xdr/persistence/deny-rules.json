@@ -1,0 +1,69 @@
+{
+  "schema": "aleph.xdr.deny-proposals.v1",
+  "rules": [
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.12",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-01",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "unsigned_service_temp_binary"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.12",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-02",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "suspicious_scheduled_task_temp_binary"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.12",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-03",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "unlisted_startup_program"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.12",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-04",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "repeated_unsigned_service_registration"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.19",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-05",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "suspicious_scheduled_task_temp_binary"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "198.51.100.19",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-06",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "unsigned_service_temp_binary"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "192.0.2.19",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-07",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "multiple_persistence_mechanisms"
+    },
+    {
+      "action": "deny",
+      "sourceIp": "203.0.113.33",
+      "targetAgentName": "choi-bujang-pc",
+      "evidenceAlertId": "ps-08",
+      "expiresAt": "2026-10-15T01:45:07.209Z",
+      "reason": "unlisted_service_survives_reboot"
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "persistence",
+  "decisions": [
+    {
+      "alertId": "ps-01",
+      "action": "block",
+      "confidence": 0.98,
+      "reason": "unsigned_service_temp_binary"
+    },
+    {
+      "alertId": "ps-02",
+      "action": "block",
+      "confidence": 0.96,
+      "reason": "suspicious_scheduled_task_temp_binary"
+    },
+    {
+      "alertId": "ps-03",
+      "action": "block",
+      "confidence": 0.94,
+      "reason": "unlisted_startup_program"
+    },
+    {
+      "alertId": "ps-04",
+      "action": "block",
+      "confidence": 0.97,
+      "reason": "repeated_unsigned_service_registration"
+    },
+    {
+      "alertId": "ps-05",
+      "action": "block",
+      "confidence": 0.96,
+      "reason": "suspicious_scheduled_task_temp_binary"
+    },
+    {
+      "alertId": "ps-06",
+      "action": "block",
+      "confidence": 0.98,
+      "reason": "unsigned_service_temp_binary"
+    },
+    {
+      "alertId": "ps-07",
+      "action": "block",
+      "confidence": 0.99,
+      "reason": "multiple_persistence_mechanisms"
+    },
+    {
+      "alertId": "ps-08",
+      "action": "block",
+      "confidence": 0.97,
+      "reason": "unlisted_service_survives_reboot"
+    },
+    {
+      "alertId": "ps-09",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-10",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "persistence_change_needs_review"
+    },
+    {
+      "alertId": "ps-17",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-18",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-19",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-20",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    },
+    {
+      "alertId": "ps-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "no_persistence_pattern"
+    }
+  ],
+  "counts": {
+    "block": 8,
+    "alert": 8,
+    "record": 8
+  }
+}
