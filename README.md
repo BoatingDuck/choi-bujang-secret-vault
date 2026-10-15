@@ -410,3 +410,15 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 실행: npm run xdr:run -- privilege
 - 상세 설명: docs/PRIVILEGE.md
 - 거부 후보는 오프라인 제안이며 실제 세션은 자동 회수하지 않음
+
+## 보너스 XDR-06 — 자료 빼돌리기 탐지
+
+- Wazuh 외부 전송 경보 30건 분석
+- MITRE ATT&CK T1041, T1048 기반 탐지 패턴
+- 명확한 대량 반출은 목적지 거부 후보로 분류
+- 애매한 외부 전송은 알림, 정상 이벤트는 기록
+- 정상 목적지 차단 방지 및 만료 규칙 적용
+- 기존 ZTNA 판정기 규칙과 요청 계약 유지
+- 실행: npm run xdr:run -- exfiltration
+- 상세 설명: docs/EXFILTRATION.md
+- 거부 후보는 오프라인 제안이며 운영 정책에는 자동 적용되지 않음

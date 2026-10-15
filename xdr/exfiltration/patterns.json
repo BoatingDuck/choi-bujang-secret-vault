@@ -1,0 +1,47 @@
+[
+  {
+    "name": "unfamiliar_bulk_destination",
+    "condition": "T1041/T1048 수준 10 이상, 5천만 바이트 이상의 실제 반출이 평소에 없던 목적지로 향하고 대량 파일 또는 자료 묶음 신호가 동반될 때",
+    "evidence": "MITRE ATT&CK T1041/T1048: 기존 C2 또는 대체 통로로 외부 대용량 유출; 새 목적지와 자료 대량 반출의 결합이 중요"
+  },
+  {
+    "name": "offhours_archive_unfamiliar_destination",
+    "condition": "T1048 고수준 경보에서 수업·업무 시간 밖 압축 파일을 처음 보는 목적지로 5천만 바이트 이상 전송했을 때",
+    "evidence": "MITRE ATT&CK T1048: 비정상 시각의 아카이브 반출과 미확인 목적지의 조합은 유출 징후"
+  },
+  {
+    "name": "repeated_c2_large_egress",
+    "condition": "T1041 고수준 경보에서 명령 통로 또는 같은 목적지로 대용량 전송이 8회 이상 반복될 때",
+    "evidence": "MITRE ATT&CK T1041: C2 통로를 통한 반복·대량 외부 전송은 유출 징후"
+  },
+  {
+    "name": "unusual_port_repeated_bulk_transfer",
+    "condition": "T1048 고수준 경보에서 평소 쓰지 않던 포트를 통해 자료를 연속으로 대량 전송할 때",
+    "evidence": "MITRE ATT&CK T1048: 비정상 프로토콜·포트 사용과 대량 반출의 결합"
+  },
+  {
+    "name": "offhours_repeated_mass_transfer",
+    "condition": "T1048 고수준 경보에서 업무 시간 밖 동일 목적지로 8회 이상의 대량 반출이 반복될 때",
+    "evidence": "MITRE ATT&CK T1048: 업무 시간 외 비정상 빈도 및 대량 외부 전송"
+  },
+  {
+    "name": "repeated_archives_to_new_destination",
+    "condition": "T1048 고수준 경보에서 압축 파일 여러 개가 연속으로 처음 보는 주소로 대량 전송될 때",
+    "evidence": "MITRE ATT&CK T1048: 아카이브를 이용한 연속적 비정상 목적지 반출"
+  },
+  {
+    "name": "rapid_whole_repository_export",
+    "condition": "T1041 고수준 경보에서 짧은 시간에 자료실 전체 또는 대량 파일을 외부 목적지로 복사할 때",
+    "evidence": "MITRE ATT&CK T1041: 짧은 시간에 전체 데이터 집합이 외부로 이동하는 고위험 대량 유출"
+  },
+  {
+    "name": "same_archive_multiple_new_destinations",
+    "condition": "T1048 고수준 경보에서 같은 압축 파일이 처음 보는 목적지 두 곳 이상에 대량 전송될 때",
+    "evidence": "MITRE ATT&CK T1048: 비정상적인 복수 목적지로 같은 아카이브를 반출하는 행위"
+  },
+  {
+    "name": "external_transfer_needs_review",
+    "condition": "T1041/T1048 수준 5 이상 경보에 전송량 증가·새 주소·압축·실패 등의 정황은 있으나 명확한 대량 반출 근거는 부족할 때 알림만 남김",
+    "evidence": "MITRE ATT&CK T1041/T1048: 기술 태그·단발 전송·압축 파일 생성만으로 유출 확정은 불가하며 정상 운영을 오차단하지 않아야 함"
+  }
+]

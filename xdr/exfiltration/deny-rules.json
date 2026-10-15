@@ -1,0 +1,95 @@
+{
+  "schema": "aleph.xdr.deny-proposals.v1",
+  "rules": [
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "203.0.113.50",
+      "evidenceAlertId": "ex-01",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "unfamiliar_bulk_destination",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "198.51.100.40",
+      "evidenceAlertId": "ex-02",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "offhours_archive_unfamiliar_destination",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "203.0.113.50",
+      "evidenceAlertId": "ex-03",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "repeated_c2_large_egress",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "198.51.100.40",
+      "evidenceAlertId": "ex-04",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "unusual_port_repeated_bulk_transfer",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "203.0.113.55",
+      "evidenceAlertId": "ex-05",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "unfamiliar_bulk_destination",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "192.0.2.90",
+      "evidenceAlertId": "ex-06",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "offhours_repeated_mass_transfer",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "198.51.100.45",
+      "evidenceAlertId": "ex-07",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "repeated_archives_to_new_destination",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "203.0.113.60",
+      "evidenceAlertId": "ex-08",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "rapid_whole_repository_export",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "203.0.113.61",
+      "evidenceAlertId": "ex-09",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "repeated_c2_large_egress",
+      "requiresTrustedPolicyIntegration": true
+    },
+    {
+      "action": "deny",
+      "scope": "destination_egress_candidate",
+      "targetDestinationIp": "198.51.100.46",
+      "evidenceAlertId": "ex-10",
+      "expiresAt": "2026-10-15T03:24:12.323Z",
+      "reason": "same_archive_multiple_new_destinations",
+      "requiresTrustedPolicyIntegration": true
+    }
+  ]
+}
