@@ -1,0 +1,47 @@
+[
+  {
+    "name": "unexpected_remote_admin_membership",
+    "condition": "T1078 고수준 경보: 원격 주소에서 계정이 administrators 그룹에 새로 추가된 사건이 확인될 때",
+    "evidence": "MITRE ATT&CK T1078(Valid Accounts): 변경된 고권한 계정을 공격자가 악용할 수 있어 원격 관리자 그룹 추가를 복합 신호로 검토"
+  },
+  {
+    "name": "newly_elevated_admin_command",
+    "condition": "T1068 또는 T1078 고수준 경보: 방금 관리자 권한을 얻은 계정이 즉시 관리자 명령을 실행할 때",
+    "evidence": "MITRE ATT&CK T1078: 새로 얻은 높은 계정 권한의 즉각적인 사용은 계정 악용 정황; T1068 태그 자체는 취약점 악용 입증이 아님"
+  },
+  {
+    "name": "offhours_unfamiliar_admin_command",
+    "condition": "T1068 고수준 경보: 업무·수업 시간 밖에 처음 보는 출발 주소에서 관리자 명령을 실행할 때",
+    "evidence": "MITRE ATT&CK T1078 탐지 전략: 계정 사용의 비정상 시각·원격 주소와 관리자 권한 명령의 결합은 이상 징후"
+  },
+  {
+    "name": "admin_membership_and_command_chain",
+    "condition": "T1078 고수준 경보: 평범한 계정의 관리자 그룹 추가 직후 명령 실행 또는 시간 외 그룹 추가와 권한 명령이 함께 확인될 때",
+    "evidence": "MITRE ATT&CK T1078: 계정 권한 변경과 높은 권한을 실제 사용하는 행위의 연쇄는 악용 정황 강화"
+  },
+  {
+    "name": "multiple_admin_membership_additions",
+    "condition": "T1078 고수준 경보: 동일 주소에서 3건 이상의 계정이 administrators 그룹에 추가된 것으로 확인될 때",
+    "evidence": "MITRE ATT&CK T1078: 여러 유효 계정의 높은 권한 추가가 집중되는 이상 변화는 계정 악용 위험 신호"
+  },
+  {
+    "name": "unexpected_admin_session_elevation",
+    "condition": "T1068 고수준 경보: 계정 세션 권한이 관리자로 바뀌었고 요청 주소도 처음 보는 곳일 때",
+    "evidence": "MITRE ATT&CK T1068: 비정상 권한 상승 후 세션 변화 탐지; 실제 취약점 악용 여부는 이 경보만으로 확정하지 않음"
+  },
+  {
+    "name": "cross_account_privileged_command",
+    "condition": "T1068 고수준 경보: 기존 사용자가 다른 계정 권한을 사용해 관리자 명령을 실행할 때",
+    "evidence": "MITRE ATT&CK T1078: 다른 유효 계정의 관리자 권한 이용은 계정 악용 가능성이 높은 정황"
+  },
+  {
+    "name": "rapid_admin_membership_readdition",
+    "condition": "T1078 고수준 경보: 관리자 그룹에서 빠진 계정이 1분 이내 다시 관리자 그룹에 들어온 사건이 확인될 때",
+    "evidence": "MITRE ATT&CK T1078: 짧은 시간 내 고권한 그룹 멤버십 회복은 의심스러운 권한 유지·재획득 정황"
+  },
+  {
+    "name": "privilege_change_needs_review",
+    "condition": "T1068 또는 T1078이 붙은 규칙 수준 5 이상 경보이지만 원격성·그룹 변경·명령 실행의 복합 근거가 충분하지 않을 때 알림만 남김",
+    "evidence": "MITRE ATT&CK T1068·T1078: 단일 관리자 명령, 승인된 수업 작업, 실패·취소 이벤트, 기법 태그만으로 악용을 단정할 수 없음"
+  }
+]

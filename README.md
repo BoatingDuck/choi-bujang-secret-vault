@@ -399,3 +399,14 @@ GitHub의 과거 공개 커밋과 이전 Vercel 배포에
 - 실행: npm run xdr:run -- persistence
 - 상세 설명: docs/PERSISTENCE.md
 - 거부 후보 생성은 오프라인 시험이며 실제 운영 정책에 자동 적용되지 않음
+
+## 보너스 XDR-05 — 권한 가로채기 탐지
+
+- Wazuh 계정·그룹 변경 및 관리자 권한 사용 경보 분석
+- MITRE ATT&CK T1068, T1078 기반 탐지 패턴
+- 명확한 권한 악용 정황만 세션 거부 후보로 분류
+- 애매한 권한 사용은 알림, 정상 이벤트는 기록
+- 기존 ZTNA 판정기 규칙 및 요청·응답 계약 유지
+- 실행: npm run xdr:run -- privilege
+- 상세 설명: docs/PRIVILEGE.md
+- 거부 후보는 오프라인 제안이며 실제 세션은 자동 회수하지 않음

@@ -1,0 +1,95 @@
+{
+  "schema": "aleph.xdr.deny-proposals.v1",
+  "rules": [
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user01",
+      "sourceIp": "203.0.113.11",
+      "evidenceAlertId": "pv-01",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "unexpected_remote_admin_membership",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user01",
+      "sourceIp": "203.0.113.11",
+      "evidenceAlertId": "pv-02",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "newly_elevated_admin_command",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user02",
+      "sourceIp": "198.51.100.11",
+      "evidenceAlertId": "pv-03",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "offhours_unfamiliar_admin_command",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user03",
+      "sourceIp": "192.0.2.11",
+      "evidenceAlertId": "pv-04",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "admin_membership_and_command_chain",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user04",
+      "sourceIp": "203.0.113.17",
+      "evidenceAlertId": "pv-05",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "multiple_admin_membership_additions",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user05",
+      "sourceIp": "198.51.100.17",
+      "evidenceAlertId": "pv-06",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "unexpected_admin_session_elevation",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user06",
+      "sourceIp": "192.0.2.17",
+      "evidenceAlertId": "pv-07",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "admin_membership_and_command_chain",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user07",
+      "sourceIp": "203.0.113.27",
+      "evidenceAlertId": "pv-08",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "cross_account_privileged_command",
+      "requiresTrustedSessionMapping": true
+    },
+    {
+      "action": "deny",
+      "scope": "account_source_session_candidate",
+      "targetAccount": "user08",
+      "sourceIp": "198.51.100.27",
+      "evidenceAlertId": "pv-09",
+      "expiresAt": "2026-10-15T02:22:56.329Z",
+      "reason": "rapid_admin_membership_readdition",
+      "requiresTrustedSessionMapping": true
+    }
+  ]
+}
