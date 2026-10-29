@@ -25,3 +25,10 @@ npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스�
 - 오류 코드별 해결: docs/CONNECTION_TROUBLESHOOT.md
 - 시작 틀 업데이트(내 파일 보존): docs/STARTER_UPDATE.md
 - 실제 회사 시스템(SDP)·앱 안 AI 연결은 담당자가 따로 안내할 때만 씁니다: docs/SDP_HOST_CONNECTION.md, docs/AI_SETUP_GUIDE.md. 이 연결은 앱을 처음 켜고 13~16단계 화면을 만들거나 공식 AI 코드 판정을 받기 위한 전제 조건은 아닙니다. 다만 17단계 이후의 실제 연결과 새 환경 재현은 해당 단계의 기준에 따라 따로 확인합니다.
+
+## 21단계 학생 작성: 은셰브 실행 설명서
+
+- **목적:** 사용자·기기·세션 상태와 업무 앱 접근 판정, 본인 범위 XDR 기록, AI 설명·조치 결과, 패키지 취약점 조회 상태를 제공하는 교육용 로컬 보안 Agent. 실제 연결·조치 효과는 해당 운영 원천의 확인 결과와 구분합니다.
+- **기능과 구조:** 브라우저(`http://127.0.0.1:5189/`) → `src/server.mjs`(로컬 HTTP/API) → `src/engine.mjs`·`student/engine-adapter.mjs`(접근 제어·XDR 연결 경계) / `src/ai/`·`src/connection/`(AI 게이트 연결 경계). `public/app.js`가 상태를 수집해 `student/extension.mjs`의 학생 표시 함수를 호출합니다. 연결·조치·AI 요청은 운영 설정/권한이 있는 경우에만 수행합니다.
+- **지원 환경/버전:** Windows PowerShell 실행 도구 `tools/start-alekov.ps1`; 앱 `package.json` 버전 `0.2.19`, `engines.node`는 `24.19.0`(실행 도구는 Node 22~24 허용). 학생 PC 실측 버전 및 실제 재현 여부는 별도 확인해야 합니다. 기본 상태는 실제 외부 시스템과 미연결이며 `-Demo`는 예제입니다.
+- **실행 설명서·글로 쓴 Mermaid 구성도·경계·오류별 확인:** [docs/STUDENT_RUNBOOK.md](docs/STUDENT_RUNBOOK.md). 기존 제공 문서와 실행 파일은 보존합니다.
